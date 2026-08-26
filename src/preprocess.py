@@ -33,6 +33,8 @@ from src.config import (
 
 CHURN_HOURS = 1.0          # 리뷰 후 이 시간 미만 플레이 = 이탈
 SPIKE_RATIO = 3.0          # 그날 리뷰가 평소(중앙값)의 몇 배면 '급증'인가
+MIN_LANG_N  = 30           # 이보다 표본이 적은 언어는 전체 기준을 쓴다
+LANG_STATS_VERSION = "1.1"  # lang_stats.json 형식 — _overall 이 들어간 판
 
 # ── 절대 모델에 넣으면 안 되는 컬럼 ──────────────────────────────
 # 목록의 원본은 src/config.py 의 FORBIDDEN 하나뿐이다.
@@ -127,15 +129,33 @@ def clean(raw: pd.DataFrame, save_stats: bool = True) -> pd.DataFrame:
     d = pd.concat([d, tf], axis=1)
 
     # 리뷰 길이는 언어마다 뜻이 다르다 (중국어 75자 = 영어 283자)
-    stats = d.groupby("language").review_len.agg(["median", "std"])
-    stats["std"] = stats["std"].replace(0, np.nan).fillna(1.0)
+    stats = d.groupby("language").review_len.agg(["median", "std", "count"])
+    overall_med = float(d.review_len.median())
+    overall_std = float(d.review_len.std())
+
+    # 표본이 너무 적은 언어는 자기 기준을 못 만든다.
+    # 예전처럼 std 를 1.0 으로 채우면 그 언어만 z 가 수백까지 튀어서,
+    # 모델이 학습 때 본 적 없는 크기가 들어간다 (아랍어 1건 → z 197).
+    thin = (stats["count"] < MIN_LANG_N) | stats["std"].isna() | (stats["std"] == 0)
+    stats.loc[thin, "median"] = overall_med
+    stats.loc[thin, "std"] = overall_std
+
     d["review_len_z"] = ((d.review_len - d.language.map(stats["median"]))
                          / d.language.map(stats["std"])).fillna(0)
     if save_stats:
         LANG_STATS.parent.mkdir(parents=True, exist_ok=True)
-        with open(LANG_STATS, "w", encoding="utf-8") as f:
-            json.dump({"median": stats["median"].to_dict(), "std": stats["std"].to_dict()},
-                      f, ensure_ascii=False, indent=1)
+        # 윈도우 기본값(CRLF)으로 쓰면 .gitattributes 의 eol=lf 와 어긋나서,
+        # 내용이 같은데도 매번 "수정된 파일"로 잡힌다
+        with open(LANG_STATS, "w", encoding="utf-8", newline="\n") as f:
+            json.dump({
+                "_version": LANG_STATS_VERSION,
+                "median": stats["median"].to_dict(),
+                "std": stats["std"].to_dict(),
+                # 목록에 없는 언어가 화면으로 들어올 때 쓸 기준.
+                # 이걸 같이 저장하지 않으면 재실행할 때마다 사라진다.
+                "_overall": {"median": overall_med, "std": overall_std},
+                "_min_n": MIN_LANG_N,
+            }, f, ensure_ascii=False, indent=1)
 
     # 급증 구간 — 세일·업데이트·화제성을 한꺼번에 잡는다
     d["date"] = pd.to_datetime(d.created_ts, unit="s").dt.date
@@ -177,8 +197,14 @@ def featurize(review: dict, game: dict, lang_stats: dict = None) -> pd.DataFrame
     owned = review.get("num_games_owned") or 0
     tf = _text_features(review.get("review", ""))
     lang = review.get("language", "english")
-    med = lang_stats["median"].get(lang, 45)
-    std = lang_stats["std"].get(lang, 1.0) or 1.0
+    # 학습 때 못 본 언어(히브리어 등)가 화면으로 들어올 수 있다.
+    # _overall 이 없는 옛 파일도 읽히도록 기본값을 남겨둔다.
+    overall = lang_stats.get("_overall") or {}
+    med_fb = overall.get("median", 45.0)
+    std_fb = overall.get("std") or 1.0
+
+    med = lang_stats["median"].get(lang, med_fb)
+    std = lang_stats["std"].get(lang) or std_fb
 
     row = {
         "hours_at_review": hours,
