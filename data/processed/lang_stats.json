@@ -1,6 +1,7 @@
 {
+ "_version": "1.1",
  "median": {
-  "arabic": 3.0,
+  "arabic": 45.0,
   "brazilian": 56.0,
   "bulgarian": 14.5,
   "czech": 29.0,
@@ -32,7 +33,7 @@
   "vietnamese": 12.0
  },
  "std": {
-  "arabic": 1.0,
+  "arabic": 506.4641043676844,
   "brazilian": 494.36075653367317,
   "bulgarian": 253.67053210647083,
   "czech": 530.4681991042647,
@@ -62,5 +63,10 @@
   "turkish": 432.8062297913572,
   "ukrainian": 717.8025690450435,
   "vietnamese": 84.37181904663532
- }
+ },
+ "_overall": {
+  "median": 45.0,
+  "std": 506.4641043676844
+ },
+ "_min_n": 30
 }
