@@ -22,7 +22,10 @@ MODELS     = ROOT / "models"
 RESULTS    = ROOT / "results"
 FIGURES    = ROOT / "reports" / "figures"
 
+RAW_CSV     = DATA_RAW / "steam_raw.csv"      # 스팀 원본 (깃에 없음 — 수집 담당에게 받는다)
 DATASET     = DATA_PROC / "dataset.csv"       # 전처리 담당이 준 학습용 표
+LANG_STATS  = DATA_PROC / "lang_stats.json"   # 언어별 리뷰 길이 기준 — preprocess 가 만든다
+                                              #   화면에서 리뷰 1건 변환할 때도 필요하므로 커밋한다
 RESULTS_CSV = RESULTS / "results.csv"         # 실험 기록이 쌓이는 곳
 EMB_NPY     = EMBEDDINGS / "review_emb.npy"   # 다국어 임베딩 (한 번 뽑아 재사용)
 
@@ -48,12 +51,18 @@ FORBIDDEN = [
     "comment_count",
     "updated_ts",             # 리뷰를 나중에 수정한 시각
     "extra",                  # 라벨 그 자체
+    "hours_total",            # 라벨 계산 중간값 — 넣으면 AUC 0.99
+    "hours_after",            # 라벨 그 자체를 시간으로 바꾼 것
 ]
 
 
 def check_leakage(X):
-    """모델에 넣기 직전 호출. 금지 컬럼이 하나라도 있으면 멈춘다."""
-    hit = [c for c in X.columns if c in FORBIDDEN]
+    """모델에 넣기 직전 호출. 금지 컬럼이 하나라도 있으면 멈춘다.
+
+    DataFrame 도 컬럼 이름 리스트도 받는다.
+    """
+    cols = X.columns if hasattr(X, "columns") else X
+    hit = [c for c in cols if c in FORBIDDEN]
     if hit:
         raise ValueError(f"누수 컬럼이 입력에 섞였습니다: {hit}")
     return X
