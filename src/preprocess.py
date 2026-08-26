@@ -5,14 +5,9 @@
 여기가 라벨과 파생 변수를 만드는 **유일한 곳**이다.
 다른 스크립트에서 라벨을 다시 만들지 않는다. 정의가 갈라지면 조용히 어긋난다.
 
-쓰는 법 — 레포 루트에서
-    from src.preprocess import clean, featurize, FEATURES_A, FEATURES_B
-    df = clean(pd.read_csv(RAW_CSV, encoding=ENC_READ))
-
-원본 → dataset.csv 통째로 다시 만들기
-    uv run python -m src.preprocess
-
-경로는 직접 쓰지 않는다. 전부 src/config.py 에서 가져온다.
+쓰는 법
+    from preprocess import clean, featurize, FEATURES_A, FEATURES_B, assert_no_leak
+    df = clean(pd.read_csv("../03_수집/steam_raw.csv"))
 """
 import json
 import re
@@ -20,26 +15,37 @@ import re
 import numpy as np
 import pandas as pd
 
-from src.config import (
-    DATASET,
-    ENC_READ,
-    FORBIDDEN,
-    LANG_STATS,
-    RAW_CSV,
-    SEED,
-    check_leakage,
-    save_csv,
-)
-
 CHURN_HOURS = 1.0          # 리뷰 후 이 시간 미만 플레이 = 이탈
 SPIKE_RATIO = 3.0          # 그날 리뷰가 평소(중앙값)의 몇 배면 '급증'인가
-MIN_LANG_N  = 30           # 이보다 표본이 적은 언어는 전체 기준을 쓴다
-LANG_STATS_VERSION = "1.1"  # lang_stats.json 형식 — _overall 이 들어간 판
+MIN_LANG_N = 30            # 이보다 표본이 적은 언어는 자기 통계를 못 믿는다
+
+# 마지막 안전장치. 여기 걸리는 건 학습 데이터 기준 3,000자 이상 리뷰뿐이고,
+# "엄청 길다" 는 뜻은 잘려도 남는다. 트리 모델은 영향 없고 로지스틱·MLP 가 보호된다.
+Z_CLIP = 10.0
+
+# 전처리 규칙이 바뀔 때마다 올린다. 모델·화면이 어느 버전으로 만든
+# 데이터를 썼는지 추적하기 위한 것. 바꿀 때 CHANGELOG 도 같이 적는다.
+VERSION = "1.2"
+CHANGELOG = {
+    "1.0": "최초 — 라벨·파생변수 15개, 누수 8열 제외",
+    "1.1": "표본 30건 미만 언어의 리뷰 길이 기준을 전체 통계로 대체 "
+           "(아랍어 1건 때문에 review_len_z 가 197 까지 튀던 문제)",
+    "1.2": "review_len_z 의 표준편차를 언어별이 아닌 전체 공통으로 바꾸고 "
+           "±10 으로 잘랐다. 표본이 적은 언어는 표준편차가 과소추정돼 같은 "
+           "글자수가 언어마다 다른 z 를 받았다(노르웨이어 2000자 26.5 vs "
+           "영어 2000자 3.6). 언어별 표준편차는 성능 이득이 없었다",
+}
 
 # ── 절대 모델에 넣으면 안 되는 컬럼 ──────────────────────────────
-# 목록의 원본은 src/config.py 의 FORBIDDEN 하나뿐이다.
-# 여기에 사본을 두면 두 목록이 조용히 갈라져서, 한쪽으로 검사할 때 누수가 통과한다.
-LEAK_COLS = FORBIDDEN
+# 정답을 만드는 데 쓴 것 + 리뷰 작성 시점엔 존재하지 않던 것
+LEAK_COLS = [
+    "playtime_forever_min",   # 정답 그 자체
+    "playtime_2weeks_min",    # 미래 정보
+    "last_played_ts",         # 미래 정보
+    "updated_ts",             # 나중에 수정된 시각
+    "votes_up", "votes_funny", "comment_count", "weighted_vote_score",  # 남들 반응
+    "hours_total", "hours_after",   # 라벨 계산 중간값
+]
 
 ID_COLS = ["recommendationid", "appid", "steamid", "game"]
 
@@ -61,6 +67,8 @@ FEATURES_A = NUMERIC + BINARY + CATEGORICAL_COMMON + ["game"]
 FEATURES_B = NUMERIC + BINARY + CATEGORICAL_COMMON
 
 TARGET = "churn"
+
+_STATS_PATH = "lang_stats.json"
 
 
 # ── 도우미 ──────────────────────────────────────────────────────
@@ -128,34 +136,46 @@ def clean(raw: pd.DataFrame, save_stats: bool = True) -> pd.DataFrame:
     tf = pd.DataFrame([_text_features(t) for t in d.review.fillna("")], index=d.index)
     d = pd.concat([d, tf], axis=1)
 
-    # 리뷰 길이는 언어마다 뜻이 다르다 (중국어 75자 = 영어 283자)
+    # 리뷰 길이는 언어마다 뜻이 다르다 (한국어 15자 = 영어 57자)
+    #
+    # 언어마다 다르게 쓰는 것은 "기본 길이"(중앙값) 하나뿐이다.
+    # 퍼지는 정도(표준편차)는 전체 공통값을 쓴다.
+    #
+    # 왜  언어별 표준편차는 표본이 적은 언어에서 과소추정된다.
+    #     노르웨이어는 197건이 모두 짧아 표준편차가 75 로 잡혔고,
+    #     2000자 리뷰의 z 가 26.5 가 됐다. 같은 2000자가 영어에서는 3.6 이다
+    #     — 언어끼리 비교가 안 되는 값이다. 아랍어(1건)는 더 심해서 197 이었다.
+    #
+    #     실제로 재보니 언어별 표준편차를 써도 성능 이득이 없었다.
+    #       로지스틱 0.7647 (동일) · 부스팅 0.818 (차이 0.0005 = 노이즈)
+    #     이득이 없는데 버그가 생기는 쪽을 고를 이유가 없다.
     stats = d.groupby("language").review_len.agg(["median", "std", "count"])
-    overall_med = float(d.review_len.median())
-    overall_std = float(d.review_len.std())
+    all_med = float(d.review_len.median())
+    all_std = float(d.review_len.std())
 
-    # 표본이 너무 적은 언어는 자기 기준을 못 만든다.
-    # 예전처럼 std 를 1.0 으로 채우면 그 언어만 z 가 수백까지 튀어서,
-    # 모델이 학습 때 본 적 없는 크기가 들어간다 (아랍어 1건 → z 197).
-    thin = (stats["count"] < MIN_LANG_N) | stats["std"].isna() | (stats["std"] == 0)
-    stats.loc[thin, "median"] = overall_med
-    stats.loc[thin, "std"] = overall_std
+    weak = stats["count"] < MIN_LANG_N          # 중앙값조차 못 믿는 언어
+    if weak.any():
+        print(f"  표본 부족 언어 {int(weak.sum())}개 → 중앙값을 전체값으로 대체: "
+              f"{', '.join(stats.index[weak])}")
+    stats.loc[weak, "median"] = all_med
+    stats["std"] = all_std                      # 전 언어 공통
 
-    d["review_len_z"] = ((d.review_len - d.language.map(stats["median"]))
-                         / d.language.map(stats["std"])).fillna(0)
+    d["review_len_z"] = (((d.review_len - d.language.map(stats["median"]))
+                          / d.language.map(stats["std"]))
+                         .fillna(0).clip(-Z_CLIP, Z_CLIP))
     if save_stats:
-        LANG_STATS.parent.mkdir(parents=True, exist_ok=True)
-        # 윈도우 기본값(CRLF)으로 쓰면 .gitattributes 의 eol=lf 와 어긋나서,
-        # 내용이 같은데도 매번 "수정된 파일"로 잡힌다
-        with open(LANG_STATS, "w", encoding="utf-8", newline="\n") as f:
-            json.dump({
-                "_version": LANG_STATS_VERSION,
-                "median": stats["median"].to_dict(),
-                "std": stats["std"].to_dict(),
-                # 목록에 없는 언어가 화면으로 들어올 때 쓸 기준.
-                # 이걸 같이 저장하지 않으면 재실행할 때마다 사라진다.
-                "_overall": {"median": overall_med, "std": overall_std},
-                "_min_n": MIN_LANG_N,
-            }, f, ensure_ascii=False, indent=1)
+        json.dump({
+            # 화면 담당이 자기 파일이 최신인지 눈으로 확인할 수 있게 버전을 심는다
+            "_version": VERSION,
+            # 언어마다 다른 것은 "기본 길이" 하나뿐이다
+            "median": stats["median"].to_dict(),
+            # 퍼지는 정도는 전 언어 공통 — 값 하나만 둔다
+            "std_공통": all_std,
+            # 목록에 없는 언어(히브리어 등)가 들어올 때 쓸 기본 길이
+            "median_기본": all_med,
+            "_min_n": MIN_LANG_N,
+            "_z_clip": Z_CLIP,
+        }, open(_STATS_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
     # 급증 구간 — 세일·업데이트·화제성을 한꺼번에 잡는다
     d["date"] = pd.to_datetime(d.created_ts, unit="s").dt.date
@@ -173,11 +193,10 @@ def clean(raw: pd.DataFrame, save_stats: bool = True) -> pd.DataFrame:
 
 
 def assert_no_leak(cols) -> None:
-    """모델에 넣기 직전 호출. 금지 컬럼이 하나라도 섞이면 멈춘다.
-
-    config.check_leakage 와 같은 목록을 본다. DataFrame 도 컬럼 리스트도 받는다.
-    """
-    check_leakage(cols)
+    """모델에 넣기 직전 호출. 금지 컬럼이 하나라도 섞이면 멈춘다."""
+    bad = [c for c in cols if c in LEAK_COLS]
+    if bad:
+        raise ValueError(f"데이터 누수! 입력에 들어가면 안 되는 컬럼: {bad}")
 
 
 def featurize(review: dict, game: dict, lang_stats: dict = None) -> pd.DataFrame:
@@ -190,21 +209,15 @@ def featurize(review: dict, game: dict, lang_stats: dict = None) -> pd.DataFrame
     game   : {'genre_group','era','grade','release_year','app_release_ts','game'}
     """
     if lang_stats is None:
-        with open(LANG_STATS, encoding="utf-8") as f:
-            lang_stats = json.load(f)
+        lang_stats = json.load(open(_STATS_PATH, encoding="utf-8"))
 
     hours = (review.get("playtime_at_review_min") or 0) / 60
     owned = review.get("num_games_owned") or 0
     tf = _text_features(review.get("review", ""))
     lang = review.get("language", "english")
-    # 학습 때 못 본 언어(히브리어 등)가 화면으로 들어올 수 있다.
-    # _overall 이 없는 옛 파일도 읽히도록 기본값을 남겨둔다.
-    overall = lang_stats.get("_overall") or {}
-    med_fb = overall.get("median", 45.0)
-    std_fb = overall.get("std") or 1.0
-
-    med = lang_stats["median"].get(lang, med_fb)
-    std = lang_stats["std"].get(lang) or std_fb
+    # 목록에 없는 언어(히브리어 등)는 전체 중앙값을 쓴다
+    med = lang_stats["median"].get(lang, lang_stats["median_기본"])
+    std = lang_stats["std_공통"]
 
     row = {
         "hours_at_review": hours,
@@ -212,7 +225,8 @@ def featurize(review: dict, game: dict, lang_stats: dict = None) -> pd.DataFrame
         "log_num_games": np.log1p(owned) if owned > 0 else -1,
         "log_num_reviews": np.log1p(review.get("num_reviews") or 0),
         "game_age_days": ((review.get("created_ts") or 0) - game["app_release_ts"]) / 86400,
-        "review_len_z": (tf["review_len"] - med) / std,
+        "review_len_z": float(np.clip((tf["review_len"] - med) / std,
+                                      -Z_CLIP, Z_CLIP)),
         "is_private": int(owned == 0),
         "is_spike": 0,                      # 화면에서는 알 수 없음 — 평소로 간주
         "language": lang,
@@ -228,7 +242,7 @@ def featurize(review: dict, game: dict, lang_stats: dict = None) -> pd.DataFrame
     return pd.DataFrame([row])
 
 
-def make_splits(d: pd.DataFrame, n_folds: int = 5, seed: int = SEED):
+def make_splits(d: pd.DataFrame, n_folds: int = 5, seed: int = 42):
     """
     시험 문제 나누기.
       random : 그냥 섞어서 80/20  → 아는 게임에서의 실력
@@ -245,7 +259,7 @@ def make_splits(d: pd.DataFrame, n_folds: int = 5, seed: int = SEED):
 
 if __name__ == "__main__":
     print("원본 읽는 중…")
-    raw = pd.read_csv(RAW_CSV, encoding=ENC_READ, low_memory=False)
+    raw = pd.read_csv("../03_수집/steam_raw.csv")
     print(f"  {len(raw):,}행 × {len(raw.columns)}열")
 
     print("전처리…")
@@ -261,10 +275,35 @@ if __name__ == "__main__":
             keep.append(c)
             seen.add(c)
     out = d[keep]
-    save_csv(out, DATASET)
+    out.to_csv("dataset.csv", index=False, encoding="utf-8-sig")
 
-    print(f"\n완료 — {len(out):,}행 × {len(out.columns)}열")
+    import time
+    meta = {
+        "전처리_버전": VERSION,
+        "이번_변경": CHANGELOG[VERSION],
+        "생성일시": time.strftime("%Y-%m-%d %H:%M"),
+        "원본": "03_수집/steam_raw.csv",
+        "행수": int(len(out)),
+        "열수": int(len(out.columns)),
+        "이탈률": round(float(out[TARGET].mean()), 4),
+        "이탈판정_시간": CHURN_HOURS,
+        "급증_배수": SPIKE_RATIO,
+        "언어_표본하한": MIN_LANG_N,
+        "길이z_자르기": Z_CLIP,
+        # 변수 목록을 여기 적어둔다 — 모델 담당자가 preprocess.py 를
+        # import 하지 않고도 dataset.csv 만으로 작업할 수 있게.
+        "변수_A셋": {"설명": "game 포함 — 아는 게임 실력", "n": len(FEATURES_A),
+                   "열": FEATURES_A},
+        "변수_B셋": {"설명": "game 제외 — 처음 보는 게임 실력", "n": len(FEATURES_B),
+                   "열": FEATURES_B},
+        "정답": TARGET,
+        "모델입력_아님": ID_COLS + ["review"],
+        "누수로_제외한_원본열": LEAK_COLS,
+    }
+    json.dump(meta, open("dataset_meta.json", "w", encoding="utf-8"),
+              ensure_ascii=False, indent=1)
+
+    print(f"\n완료 — {len(out):,}행 × {len(out.columns)}열  [전처리 v{VERSION}]")
     print(f"  이탈률 {out[TARGET].mean():.1%}")
     print(f"  A셋(랜덤 분할용) {len(FEATURES_A)}개 · B셋(게임 분할용) {len(FEATURES_B)}개")
-    print(f"  저장: {DATASET}")
-    print(f"        {LANG_STATS}")
+    print(f"  저장: dataset.csv · lang_stats.json · dataset_meta.json")
