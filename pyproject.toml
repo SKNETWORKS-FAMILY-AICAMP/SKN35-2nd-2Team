@@ -15,6 +15,7 @@ dependencies = [
     "sentence-transformers",
     "ipykernel",
     "streamlit>=1.62.0",
+    "plotly>=7.0.0",
 ]
 
 [tool.uv]
