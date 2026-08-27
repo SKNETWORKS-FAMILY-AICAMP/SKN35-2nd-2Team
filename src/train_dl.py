@@ -232,6 +232,10 @@ def save_final():
               MODELS / "dl_threshold.json")
     save_json({"열순서": list(Xt.columns), "숫자열": num, "범주열": cat,
                "임베딩열수": len(emb_cols),
+               # 예측할 때 같은 타입으로 맞추기 위해 학습 당시 타입을 남긴다.
+               # 예: release_year 는 CSV 를 거치며 int 가 되는데 featurize 는 str 을
+               #     돌려준다. 타입이 다르면 에러 없이 다르게 처리된다.
+               "타입": {c: str(Xt[c].dtype) for c in cols},
                "설명": "이 순서 그대로 넣어야 한다. 순서가 어긋나면 에러 없이 틀린다"},
               MODELS / "dl_feature_order.json")
     save_json({"모델": "MLP(숫자+글 PCA64)", "임베딩모델": EMB_MODEL,

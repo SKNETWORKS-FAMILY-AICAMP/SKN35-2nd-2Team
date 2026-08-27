@@ -33,7 +33,9 @@ def _load():
         import joblib
         _cache["model"] = joblib.load(MODELS / "dl_model.joblib")
         _cache["thr"] = load_json(MODELS / "dl_threshold.json")["threshold"]
-        _cache["order"] = load_json(MODELS / "dl_feature_order.json")["열순서"]
+        fo = load_json(MODELS / "dl_feature_order.json")
+        _cache["order"] = fo["열순서"]
+        _cache["dtypes"] = fo.get("타입", {})
         _cache["meta"] = load_json(MODELS / "dl_meta.json")
     return _cache
 
@@ -45,12 +47,11 @@ def _encoder():
     return _cache["enc"]
 
 
-def predict_one(review, playtime_at_review_min, num_games_owned, num_reviews,
-                voted_up, created_ts, game, **kw):
-    """리뷰 한 건 -> 이탈 확률. 학습 때와 같은 변환을 거친다."""
+def _build_row(review, playtime_at_review_min, num_games_owned, num_reviews,
+               voted_up, created_ts, game, **kw):
+    """리뷰 한 건 -> 모델 입력 한 줄. 예측과 근거(SHAP)가 같은 줄을 쓴다."""
     from src.preprocess import featurize
 
-    c = _load()
     row = featurize(
         {"review": review, "language": "english",
          "playtime_at_review_min": playtime_at_review_min,
@@ -66,7 +67,36 @@ def predict_one(review, playtime_at_review_min, num_games_owned, num_reviews,
                      index=row.index)
     row = pd.concat([row, e], axis=1)
 
-    X = row.reindex(columns=c["order"])      # ★ 학습 때의 열 순서로 강제 정렬
+    return coerce_dtypes(row)
+
+
+def coerce_dtypes(row):
+    """
+    학습 때의 타입으로 맞춘다.
+
+    왜 필요한가
+        preprocess.featurize 는 release_year 를 글자('2024')로 돌려주는데,
+        학습에 쓴 dataset.csv 는 CSV 를 거치며 숫자(2024)가 된다.
+        타입이 다르면 파이프라인이 다른 갈래로 처리하는데 에러는 안 난다.
+        -> 조용히 틀린 예측. 여기서 학습 당시 타입으로 되돌린다.
+    """
+    for c, want in _load()["dtypes"].items():
+        if c not in row.columns:
+            continue
+        try:
+            if want.startswith(("int", "float")):
+                row[c] = pd.to_numeric(row[c], errors="coerce")
+            elif want in ("object", "str", "category"):
+                row[c] = row[c].astype(str)
+        except Exception:
+            pass
+    return row
+
+
+def predict_one(**kw):
+    """리뷰 한 건 -> 이탈 확률."""
+    c = _load()
+    X = _build_row(**kw).reindex(columns=c["order"])   # ★ 학습 때의 열 순서로 강제 정렬
     p = float(c["model"].predict_proba(X)[0, 1])
     return {"이탈확률": round(p, 4),
             "판정": "이탈" if p >= c["thr"] else "잔존",
