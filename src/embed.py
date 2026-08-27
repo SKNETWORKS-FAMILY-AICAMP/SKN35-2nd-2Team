@@ -20,11 +20,9 @@
 실행 (레포 루트에서)
     uv run python -m src.embed
 """
-import json
-
 import numpy as np
 
-from src.config import EMB_DIM, EMB_MODEL, EMB_NPY
+from src.config import EMB_DIM, EMB_MODEL, EMB_NPY, load_json, save_json
 from src.evaluate import load_english
 
 BATCH = 256
@@ -71,7 +69,7 @@ def build():
         "첫_recommendationid": int(d.recommendationid.iloc[0]),
         "끝_recommendationid": int(d.recommendationid.iloc[-1]),
     }
-    json.dump(meta, open(_META, "w", encoding="utf-8"), ensure_ascii=False, indent=1)  # JSON 은 BOM 금지
+    save_json(meta, _META)
 
     print(f"\n저장 {EMB_NPY}")
     print(f"  {emb.shape} · {emb.nbytes / 1024**2:.0f}MB")
@@ -91,7 +89,7 @@ def load(d=None):
     emb = np.load(EMB_NPY)
     if d is None:
         d, _, _ = load_english()
-    m = json.load(open(_META, encoding="utf-8"))
+    m = load_json(_META)
     if (len(d) != m["행수"]
             or int(d.recommendationid.iloc[0]) != m["첫_recommendationid"]
             or int(d.recommendationid.iloc[-1]) != m["끝_recommendationid"]):

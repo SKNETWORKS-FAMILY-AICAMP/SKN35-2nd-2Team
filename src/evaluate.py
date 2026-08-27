@@ -23,7 +23,6 @@
     evaluate_model("로지스틱", d[cols], y, groups, sp, fit_predict, 변수묶음="B셋")
     summary()
 """
-import json
 import time
 from datetime import datetime
 
@@ -36,7 +35,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import GroupKFold, train_test_split
 
 from src.config import (
-    DATA_PROC, ENC_WRITE, FORBIDDEN, RESULTS_CSV, SEED, load_dataset,
+    DATA_PROC, ENC_CSV, ENC_READ, FORBIDDEN, RESULTS_CSV, SEED, load_dataset, load_json,
 )
 
 N_FOLDS = 5
@@ -140,8 +139,7 @@ def evaluate_model(모델명, X, y, groups, splits, fit_predict,
 # ── 기록 ────────────────────────────────────────────────────────
 def _version():
     try:
-        return "v" + json.load(open(DATA_PROC / "dataset_meta.json",
-                                    encoding="utf-8"))["전처리_버전"]
+        return "v" + load_json(DATA_PROC / "dataset_meta.json")["전처리_버전"]
     except Exception:
         return "?"
 
@@ -150,14 +148,14 @@ def _append(rec):
     RESULTS_CSV.parent.mkdir(parents=True, exist_ok=True)
     df = pd.DataFrame([rec])
     header = not RESULTS_CSV.exists()
-    df.to_csv(RESULTS_CSV, mode="a", header=header, index=False, encoding=ENC_WRITE)
+    df.to_csv(RESULTS_CSV, mode="a", header=header, index=False, encoding=ENC_CSV)
 
 
 def summary(정렬="AUC"):
     """results.csv 를 표로 출력한다. 학습 결과서에 그대로 붙인다."""
     if not RESULTS_CSV.exists():
         print("아직 기록된 결과가 없습니다."); return None
-    df = pd.read_csv(RESULTS_CSV, encoding="utf-8")
+    df = pd.read_csv(RESULTS_CSV, encoding=ENC_READ)
     cols = ["모델명", "변수묶음", "분할방식", "AUC", "편차", "PR-AUC", "Recall",
             "F1", "학습시간", "행수", "전처리버전"]
     print(df[cols].to_string(index=False))

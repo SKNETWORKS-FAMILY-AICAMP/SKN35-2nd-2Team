@@ -16,8 +16,6 @@ B(머신러닝)가 낸 전체 13.9만행 수치(AUC 0.820)는 행 수가 달라
 실행 (레포 루트에서)
     uv run python -m src.train_dl
 """
-import json
-
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -26,13 +24,13 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from src.config import DATA_PROC, SEED
+from src.config import DATA_PROC, SEED, load_json
 from src.evaluate import evaluate_model, features, load_english, make_splits, summary
 
 
 def feature_cols(변수묶음="B셋"):
     """dataset_meta.json 에서 가져온다. 손으로 타이핑하면 game 이 섞인다."""
-    m = json.load(open(DATA_PROC / "dataset_meta.json", encoding="utf-8"))
+    m = load_json(DATA_PROC / "dataset_meta.json")
     return m[f"변수_{변수묶음}"]["열"]
 
 

@@ -5,6 +5,7 @@
 팀원 전원이 이 파일 하나만 import 해서 쓴다.
 """
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -37,8 +38,21 @@ EMB_DIM   = 384
 
 # ── 인코딩 ──────────────────────────────────────────────
 # 한국어 윈도우 파이썬은 기본이 cp949 라서 명시하지 않으면 한글이 깨진다.
+# ★★ 규칙: CSV 는 utf-8-sig, JSON 은 utf-8. 섞으면 반드시 터진다. ★★
+#
+#   CSV  → utf-8-sig  맨 앞에 BOM 표식이 있어야 엑셀이 한글을 알아본다.
+#                     안 붙이면 팀원이 엑셀로 열 때 전부 깨져 보인다.
+#
+#   JSON → utf-8      BOM 이 붙으면 json.load 가 그 자리에서 죽는다.
+#                       JSONDecodeError: Unexpected UTF-8 BOM
+#                     이 프로젝트에서 실제로 두 번 당했다
+#                     (preprocess 의 lang_stats.json, embed 의 meta.json).
+#
+#   → 손으로 encoding= 을 적지 말고 아래 save_json / save_csv 를 쓸 것.
 ENC_READ  = "utf-8"
-ENC_WRITE = "utf-8-sig"   # sig 를 붙여야 엑셀에서 한글이 안 깨진다
+ENC_CSV   = "utf-8-sig"   # CSV 쓰기 전용
+ENC_JSON  = "utf-8"       # JSON 쓰기 전용 — 절대 sig 를 붙이지 않는다
+ENC_WRITE = ENC_CSV       # 옛 이름 (CSV 를 가리킨다)
 
 # ── 랜덤시드 ────────────────────────────────────────────
 SEED = 42
@@ -83,11 +97,26 @@ def load_dataset(path=None):
 
 
 def save_csv(df, path):
-    """표를 저장한다. 엑셀에서 한글이 안 깨지는 형식으로."""
+    """표를 저장한다. 엑셀에서 한글이 안 깨지는 형식(utf-8-sig)으로."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(path, index=False, encoding=ENC_WRITE)
+    df.to_csv(path, index=False, encoding=ENC_CSV)
     return path
+
+
+def save_json(obj, path):
+    """JSON 을 저장한다. BOM 을 붙이지 않는다 (붙이면 json.load 가 깨진다)."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding=ENC_JSON) as f:
+        json.dump(obj, f, ensure_ascii=False, indent=1)
+    return path
+
+
+def load_json(path):
+    """JSON 을 읽는다. 옛 파일에 BOM 이 남아 있어도 utf-8-sig 로 걷어낸다."""
+    with open(path, encoding="utf-8-sig") as f:
+        return json.load(f)
 
 
 if __name__ == "__main__":
