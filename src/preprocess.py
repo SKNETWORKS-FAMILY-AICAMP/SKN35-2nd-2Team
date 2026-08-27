@@ -6,14 +6,22 @@
 다른 스크립트에서 라벨을 다시 만들지 않는다. 정의가 갈라지면 조용히 어긋난다.
 
 쓰는 법
-    from preprocess import clean, featurize, FEATURES_A, FEATURES_B, assert_no_leak
-    df = clean(pd.read_csv("../03_수집/steam_raw.csv"))
+    from src.preprocess import clean, featurize, FEATURES_A, FEATURES_B, assert_no_leak
+
+실행 (레포 루트에서)
+    uv run python -m src.preprocess
+
+경로는 전부 src/config.py 가 정한다. 여기에 직접 적지 않는다.
 """
 import json
 import re
 
 import numpy as np
 import pandas as pd
+
+from src.config import (
+    DATA_PROC, DATASET, ENC_READ, ENC_WRITE, LANG_STATS, RAW_CSV,
+)
 
 CHURN_HOURS = 1.0          # 리뷰 후 이 시간 미만 플레이 = 이탈
 SPIKE_RATIO = 3.0          # 그날 리뷰가 평소(중앙값)의 몇 배면 '급증'인가
@@ -68,7 +76,7 @@ FEATURES_B = NUMERIC + BINARY + CATEGORICAL_COMMON
 
 TARGET = "churn"
 
-_STATS_PATH = "lang_stats.json"
+_STATS_PATH = LANG_STATS      # data/processed/lang_stats.json (config 가 정함)
 
 
 # ── 도우미 ──────────────────────────────────────────────────────
@@ -164,6 +172,7 @@ def clean(raw: pd.DataFrame, save_stats: bool = True) -> pd.DataFrame:
                           / d.language.map(stats["std"]))
                          .fillna(0).clip(-Z_CLIP, Z_CLIP))
     if save_stats:
+        _STATS_PATH.parent.mkdir(parents=True, exist_ok=True)
         json.dump({
             # 화면 담당이 자기 파일이 최신인지 눈으로 확인할 수 있게 버전을 심는다
             "_version": VERSION,
@@ -175,7 +184,7 @@ def clean(raw: pd.DataFrame, save_stats: bool = True) -> pd.DataFrame:
             "median_기본": all_med,
             "_min_n": MIN_LANG_N,
             "_z_clip": Z_CLIP,
-        }, open(_STATS_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        }, open(_STATS_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=1)  # JSON 은 BOM 금지
 
     # 급증 구간 — 세일·업데이트·화제성을 한꺼번에 잡는다
     d["date"] = pd.to_datetime(d.created_ts, unit="s").dt.date
@@ -259,7 +268,7 @@ def make_splits(d: pd.DataFrame, n_folds: int = 5, seed: int = 42):
 
 if __name__ == "__main__":
     print("원본 읽는 중…")
-    raw = pd.read_csv("../03_수집/steam_raw.csv")
+    raw = pd.read_csv(RAW_CSV, encoding=ENC_READ, low_memory=False)
     print(f"  {len(raw):,}행 × {len(raw.columns)}열")
 
     print("전처리…")
@@ -275,14 +284,15 @@ if __name__ == "__main__":
             keep.append(c)
             seen.add(c)
     out = d[keep]
-    out.to_csv("dataset.csv", index=False, encoding="utf-8-sig")
+    DATASET.parent.mkdir(parents=True, exist_ok=True)
+    out.to_csv(DATASET, index=False, encoding=ENC_WRITE)
 
     import time
     meta = {
         "전처리_버전": VERSION,
         "이번_변경": CHANGELOG[VERSION],
         "생성일시": time.strftime("%Y-%m-%d %H:%M"),
-        "원본": "03_수집/steam_raw.csv",
+        "원본": str(RAW_CSV.relative_to(RAW_CSV.parent.parent.parent)),
         "행수": int(len(out)),
         "열수": int(len(out.columns)),
         "이탈률": round(float(out[TARGET].mean()), 4),
@@ -300,10 +310,12 @@ if __name__ == "__main__":
         "모델입력_아님": ID_COLS + ["review"],
         "누수로_제외한_원본열": LEAK_COLS,
     }
-    json.dump(meta, open("dataset_meta.json", "w", encoding="utf-8"),
+    json.dump(meta, open(DATA_PROC / "dataset_meta.json", "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
 
     print(f"\n완료 — {len(out):,}행 × {len(out.columns)}열  [전처리 v{VERSION}]")
     print(f"  이탈률 {out[TARGET].mean():.1%}")
     print(f"  A셋(랜덤 분할용) {len(FEATURES_A)}개 · B셋(게임 분할용) {len(FEATURES_B)}개")
-    print(f"  저장: dataset.csv · lang_stats.json · dataset_meta.json")
+    print(f"  저장: {DATASET}")
+    print(f"        {_STATS_PATH}")
+    print(f"        {DATA_PROC / 'dataset_meta.json'}")
