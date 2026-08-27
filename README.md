@@ -52,6 +52,11 @@ SKN35-2nd-2Team/
 ├── src/                      # 코드. 영어·소문자 — import 해야 하므로
 │   ├── __init__.py           #   빈 파일. 있어야 from src.* 가 됨
 │   ├── config.py             #   ★ 경로 · 인코딩 · 시드 · 누수금지목록 · 모델이름
+│   │                         #     파일 위치는 전부 여기서만 정한다
+│   │
+│   ├── preprocess.py         #   ★ 원본 → 학습용 표. 라벨을 만드는 유일한 곳
+│   │                         #     uv run python -m src.preprocess
+│   │                         #     dataset.csv · lang_stats.json · dataset_meta.json 생성
 │   │
 │   ├── evaluate.py           #   채점표. 모든 모델이 이 함수로만 채점된다
 │   │                         #     A셋/B셋 x 랜덤/게임분할 = 4칸
@@ -79,8 +84,12 @@ SKN35-2nd-2Team/
 │   ├── raw/                  # 스팀 원본 139,667행         → 깃에 안 올림 (60MB)
 │   │                         #   단, manifest.json(수집 영수증)과
 │   │                         #   selected_60.csv(게임 선정 근거)는 올린다
-│   ├── processed/            # 전처리 결과 dataset.csv     → 깃에 안 올림
-│   │                         #   (코드로 다시 만들 수 있으므로)
+│   ├── processed/            # 전처리 결과
+│   │                         #   dataset.csv (64MB)  → 깃에 안 올림
+│   │                         #   lang_stats.json     → 커밋 (언어별 리뷰길이 기준)
+│   │                         #   dataset_meta.json   → 커밋 (행수·열목록·버전)
+│   │                         #   ※ csv 는 코드로 다시 만든다:
+│   │                         #     uv run python -m src.preprocess
 │   └── embeddings/           # 리뷰 임베딩 .npy            → 깃에 안 올림
 │                             #   139,658 x 384 = 수백 MB
 │
