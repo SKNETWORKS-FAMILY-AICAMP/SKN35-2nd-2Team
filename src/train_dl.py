@@ -170,6 +170,85 @@ def make_boosting_text(n_comp=64):
     return f
 
 
+# ── 최종 모델 저장 ──────────────────────────────────────────────
+def save_final():
+    """
+    화면(app/) 에 넘길 최종 딥러닝 모델을 저장한다.
+
+    무엇을 고르는가
+        게임 단위 분할 성능이 가장 좋은 딥러닝 모델.
+        실제 서비스에서는 학습에 없던 게임의 리뷰가 들어오므로
+        랜덤 분할 점수는 실전과 다르다.  -> MLP(숫자+글 PCA64)
+
+    무엇을 같이 저장하는가
+        모델만 저장하면 화면에서 못 쓴다. 네 개가 한 세트다.
+          dl_model.joblib        전처리(스케일·원핫·PCA)까지 통째로 담긴 파이프라인
+          dl_threshold.json      이탈로 판정할 확률 기준
+          dl_feature_order.json  ★ 열 순서. 모델은 이름이 아니라 순서로 받는다
+          dl_meta.json           어떤 데이터·어떤 성능이었는지
+    """
+    import joblib
+    from sklearn.decomposition import PCA
+    from sklearn.metrics import f1_score, precision_recall_curve, roc_auc_score
+
+    from src.config import EMB_MODEL, MODELS, save_json
+    from src.embed import load as load_embeddings
+
+    d, y, g = load_english()
+    sp = make_splits(d, g)
+    cols = feature_cols("B셋")
+    Xt = with_text(features(d, cols), load_embeddings(d))
+    emb_cols = [c for c in Xt.columns if c.startswith(EMB_PREFIX)]
+    num = [c for c in cols if pd.api.types.is_numeric_dtype(Xt[c])]
+    cat = [c for c in cols if c not in num]
+
+    def build():
+        return make_pipeline(
+            ColumnTransformer([
+                ("n", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
+                ("c", OneHotEncoder(handle_unknown="ignore", min_frequency=20), cat),
+                ("e", make_pipeline(StandardScaler(), PCA(n_components=64, random_state=SEED)),
+                 emb_cols),
+            ]),
+            MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=300,
+                          early_stopping=True, n_iter_no_change=10, random_state=SEED))
+
+    # 1) 임계값은 '보지 않은 데이터'에서 고른다 (학습 데이터에서 고르면 낙관적)
+    tr, te = sp["random"][0]
+    proba = build().fit(Xt.iloc[tr], y[tr]).predict_proba(Xt.iloc[te])[:, 1]
+    prec, rec, thr = precision_recall_curve(y[te], proba)
+    f1s = np.divide(2 * prec * rec, prec + rec, out=np.zeros_like(prec),
+                    where=(prec + rec) > 0)
+    best = int(np.argmax(f1s))
+    threshold = float(thr[best]) if best < len(thr) else 0.5
+    print(f"  임계값 {threshold:.3f} 선택 (F1 {f1s[best]:.3f}, 기본 0.5 일 때 "
+          f"{f1_score(y[te], (proba >= .5).astype(int)):.3f})")
+
+    # 2) 최종 모델은 전체 데이터로 다시 학습한다 (배포용이라 데이터를 다 쓴다)
+    model = build().fit(Xt, y)
+    MODELS.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, MODELS / "dl_model.joblib")
+    save_json({"threshold": threshold, "고른방법": "랜덤분할 시험셋에서 F1 최대"},
+              MODELS / "dl_threshold.json")
+    save_json({"열순서": list(Xt.columns), "숫자열": num, "범주열": cat,
+               "임베딩열수": len(emb_cols),
+               "설명": "이 순서 그대로 넣어야 한다. 순서가 어긋나면 에러 없이 틀린다"},
+              MODELS / "dl_feature_order.json")
+    save_json({"모델": "MLP(숫자+글 PCA64)", "임베딩모델": EMB_MODEL,
+               "학습행수": int(len(y)), "언어": "english",
+               "전처리버전": _version_of_dataset(),
+               "성능_랜덤": 0.7770, "성능_게임분할": 0.7295,
+               "고른기준": "게임 단위 분할 성능이 가장 좋은 딥러닝 모델",
+               "주의": "lang_stats.json 과 같은 버전이어야 한다"},
+              MODELS / "dl_meta.json")
+    print(f"  저장 {MODELS}/dl_model.joblib 외 3개")
+    return model, threshold
+
+
+def _version_of_dataset():
+    return load_json(DATA_PROC / "dataset_meta.json")["전처리_버전"]
+
+
 def main():
     d, y, g = load_english()
     sp = make_splits(d, g)
