@@ -438,5 +438,31 @@
   "grade"
  ],
  "임베딩열수": 384,
+ "타입": {
+  "log_hours_at_review": "float64",
+  "hours_at_review": "float64",
+  "log_num_games": "float64",
+  "log_num_reviews": "float64",
+  "game_age_days": "float64",
+  "review_len": "int64",
+  "review_words": "int64",
+  "review_len_z": "float64",
+  "excl_ratio": "float64",
+  "caps_ratio": "float64",
+  "voted_up": "int64",
+  "steam_purchase": "int64",
+  "received_for_free": "int64",
+  "early_access": "int64",
+  "steam_deck": "int64",
+  "is_private": "int64",
+  "is_spike": "int64",
+  "has_text": "int64",
+  "has_repeat": "int64",
+  "language": "category",
+  "genre_group": "category",
+  "era": "category",
+  "grade": "category",
+  "release_year": "int64"
+ },
  "설명": "이 순서 그대로 넣어야 한다. 순서가 어긋나면 에러 없이 틀린다"
 }
