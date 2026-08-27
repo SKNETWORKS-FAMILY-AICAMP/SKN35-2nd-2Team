@@ -66,7 +66,9 @@ SKN35-2nd-2Team/
 │   ├── embed.py              #   ★ 리뷰 글 → 숫자벡터. 오래 걸리므로 한 번만
 │   │                         #     결과를 data/embeddings/ 에 .npy 로 저장
 │   ├── train_dl.py           #   딥러닝 — (1) MLP  (2) 임베딩+MLP
-│   ├── explain.py            #   SHAP. 화면 1의 "왜 그렇게 판단했나"
+│   ├── explain.py            #   SHAP (딥러닝 담당) — 화면 1의 "왜 그렇게 판단했나"
+│   ├── explain_ml.py         #   SHAP (머신러닝 담당)
+│   │                         #     ※ 같은 파일을 둘이 고치면 머지에서 덮인다
 │   ├── predict.py            #   저장된 모델로 리뷰 1건 예측 ← app/ 이 불러 씀
 │   └── db.py                 #   DB 적재 (DB 담당)
 │
