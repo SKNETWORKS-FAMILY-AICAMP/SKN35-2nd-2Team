@@ -27,10 +27,13 @@ DATASET     = DATA_PROC / "dataset.csv"       # 전처리 담당이 준 학습�
 LANG_STATS  = DATA_PROC / "lang_stats.json"   # 언어별 리뷰 길이 기준 — preprocess 가 만든다
                                               #   화면에서 리뷰 1건 변환할 때도 필요하므로 커밋한다
 RESULTS_CSV = RESULTS / "results.csv"         # 실험 기록이 쌓이는 곳
-EMB_NPY     = EMBEDDINGS / "review_emb.npy"   # 다국어 임베딩 (한 번 뽑아 재사용)
+EMB_NPY     = EMBEDDINGS / "review_emb_en.npy"  # 영어 리뷰 임베딩 (한 번 뽑아 재사용)
 
-# 딥러닝 임베딩 모델 — 30개 언어를 한 모델로 처리
-EMB_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+# 딥러닝 임베딩 모델 — 영어 전용, 가볍다 (384차원)
+#   다국어를 섞으면 모델이 글은 안 읽고 "이건 러시아어 → 그 게임" 지름길을 탄다.
+#   영어만 써도 이탈률 차이가 0.9%p 뿐이라 영어로 간다. (A 가이드 결정)
+EMB_MODEL = "all-MiniLM-L6-v2"
+EMB_DIM   = 384
 
 # ── 인코딩 ──────────────────────────────────────────────
 # 한국어 윈도우 파이썬은 기본이 cp949 라서 명시하지 않으면 한글이 깨진다.
