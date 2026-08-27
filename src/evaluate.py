@@ -151,11 +151,18 @@ def _append(rec):
     df.to_csv(RESULTS_CSV, mode="a", header=header, index=False, encoding=ENC_CSV)
 
 
-def summary(정렬="AUC"):
-    """results.csv 를 표로 출력한다. 학습 결과서에 그대로 붙인다."""
+def summary(최신만=True):
+    """
+    results.csv 를 표로 출력한다. 학습 결과서에 그대로 붙인다.
+
+    최신만=True 면 같은 (모델·변수묶음·분할) 조합은 마지막 실행만 남긴다.
+    같은 모델을 여러 번 돌리면 기록이 쌓이므로 기본값으로 켜둔다.
+    """
     if not RESULTS_CSV.exists():
         print("아직 기록된 결과가 없습니다."); return None
     df = pd.read_csv(RESULTS_CSV, encoding=ENC_READ)
+    if 최신만:
+        df = df.drop_duplicates(["모델명", "변수묶음", "분할방식"], keep="last")
     cols = ["모델명", "변수묶음", "분할방식", "AUC", "편차", "PR-AUC", "Recall",
             "F1", "학습시간", "행수", "전처리버전"]
     print(df[cols].to_string(index=False))
