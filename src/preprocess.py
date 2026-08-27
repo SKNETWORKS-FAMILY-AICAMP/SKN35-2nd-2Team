@@ -21,6 +21,7 @@ import pandas as pd
 
 from src.config import (
     DATA_PROC, DATASET, ENC_READ, ENC_WRITE, LANG_STATS, RAW_CSV,
+    load_json, save_json,
 )
 
 CHURN_HOURS = 1.0          # 리뷰 후 이 시간 미만 플레이 = 이탈
@@ -172,8 +173,7 @@ def clean(raw: pd.DataFrame, save_stats: bool = True) -> pd.DataFrame:
                           / d.language.map(stats["std"]))
                          .fillna(0).clip(-Z_CLIP, Z_CLIP))
     if save_stats:
-        _STATS_PATH.parent.mkdir(parents=True, exist_ok=True)
-        json.dump({
+        save_json({
             # 화면 담당이 자기 파일이 최신인지 눈으로 확인할 수 있게 버전을 심는다
             "_version": VERSION,
             # 언어마다 다른 것은 "기본 길이" 하나뿐이다
@@ -184,7 +184,7 @@ def clean(raw: pd.DataFrame, save_stats: bool = True) -> pd.DataFrame:
             "median_기본": all_med,
             "_min_n": MIN_LANG_N,
             "_z_clip": Z_CLIP,
-        }, open(_STATS_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=1)  # JSON 은 BOM 금지
+        }, _STATS_PATH)
 
     # 급증 구간 — 세일·업데이트·화제성을 한꺼번에 잡는다
     d["date"] = pd.to_datetime(d.created_ts, unit="s").dt.date
@@ -218,7 +218,7 @@ def featurize(review: dict, game: dict, lang_stats: dict = None) -> pd.DataFrame
     game   : {'genre_group','era','grade','release_year','app_release_ts','game'}
     """
     if lang_stats is None:
-        lang_stats = json.load(open(_STATS_PATH, encoding="utf-8"))
+        lang_stats = load_json(_STATS_PATH)
 
     hours = (review.get("playtime_at_review_min") or 0) / 60
     owned = review.get("num_games_owned") or 0
@@ -310,8 +310,7 @@ if __name__ == "__main__":
         "모델입력_아님": ID_COLS + ["review"],
         "누수로_제외한_원본열": LEAK_COLS,
     }
-    json.dump(meta, open(DATA_PROC / "dataset_meta.json", "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+    save_json(meta, DATA_PROC / "dataset_meta.json")
 
     print(f"\n완료 — {len(out):,}행 × {len(out.columns)}열  [전처리 v{VERSION}]")
     print(f"  이탈률 {out[TARGET].mean():.1%}")
