@@ -2,6 +2,10 @@
 """
 SHAP — "모델이 왜 그렇게 판단했나" 를 숫자로 쪼갠다.
 
+★ 이 파일은 딥러닝(C) 담당용이다. 영어 서브셋 67,112행 · B셋 기준.
+  머신러닝(B) 담당은 src/explain_ml.py 를 쓴다 (13.9만 행 전체 · A셋/B셋).
+  같은 파일을 둘이 고치면 머지에서 한쪽이 덮이므로 나눠 둔다.
+
 무엇인가
     모델은 이탈 확률 0.87 만 뱉는다. 왜 0.87 인지는 말해주지 않는다.
     SHAP 은 그 0.87 을 변수별 몫으로 나눈다.
@@ -30,6 +34,15 @@ SHAP — "모델이 왜 그렇게 판단했나" 를 숫자로 쪼갠다.
 실행 (레포 루트에서)
     uv run python -m src.explain
 """
+# ★ LightGBM 을 torch 보다 먼저 올려야 한다.
+#   순서가 반대면 둘이 각자 OpenMP 를 들고 와 충돌해서 프로세스가
+#   예외 없이 그냥 죽는다. 이 모듈은 SHAP(LightGBM)과 임베딩(torch)을
+#   함께 쓰므로 여기서 선점한다.
+#   ※ 반대로 AutoGluon(src/auto.py)은 LightGBM 이 먼저 올라가 있으면
+#     멀티프로세싱 단계에서 교착된다. 그래서 config.py 가 아니라
+#     이 파일에서만 선점한다. auto.py 는 explain 을 import 하지 않는다.
+import lightgbm as _lgb_preload  # noqa: F401
+
 import numpy as np
 import pandas as pd
 

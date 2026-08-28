@@ -10,14 +10,6 @@ from pathlib import Path
 
 import pandas as pd
 
-# ★ 맥에서 torch 를 먼저 올린 뒤 LightGBM 을 로드하면 프로세스가 조용히 죽는다.
-#   (둘이 각자 OpenMP 런타임을 들고 와서 충돌한다. 예외도 안 나고 그냥 종료된다.)
-#   config 는 모든 모듈이 가장 먼저 import 하므로 여기서 LightGBM 을 선점해 둔다.
-#   순서만 지키면 같은 프로세스에서 임베딩과 SHAP 을 함께 쓸 수 있다.
-try:
-    import lightgbm as _lgb_preload  # noqa: F401
-except ImportError:
-    pass
 
 # ── 경로 ────────────────────────────────────────────────
 # __file__ = .../SKN35-2nd-2Team/src/config.py
