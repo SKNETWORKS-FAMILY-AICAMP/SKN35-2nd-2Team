@@ -16,10 +16,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from app._shared import get_all, build_row, page, STEAM_TEXT_MUTED
+from app._shared import get_all, predict_many, page, STEAM_TEXT_MUTED
 from app._predict import load_catalog, STEAM_IMG
 
-clf, reg, GAMES, _, _, META, LANG = get_all()
+MODEL, GAMES, _, _, META, LANG = get_all()
 CAT = load_catalog()
 
 page("💰 살까 말까 계산기",
@@ -77,12 +77,12 @@ if not picks:
 
 if st.button("계산하기", width="stretch"):
     sel = paid[paid.game.isin(picks)].reset_index(drop=True)
-    X = pd.concat([build_row("Pretty good game, worth the price.",
-                             hours, owned, n_rev, voted, g, LANG)
-                   for _, g in sel.iterrows()], ignore_index=True)
-
-    sel["완주확률"] = 1 - clf.predict_proba(X)[:, 1]
-    sel["예상시간"] = np.expm1(reg.predict(X)).clip(min=0.2)
+    p_churn = predict_many(MODEL, META["_order"], "Pretty good game, worth the price.",
+                           hours, owned, n_rev, voted, sel, LANG)
+    sel["완주확률"] = 1 - p_churn
+    # 예상 플레이 시간 — 완주 확률에서 추정한다.
+    # (예전 임시 모델에는 회귀 모델이 따로 있었지만 최종 모델은 분류만 한다)
+    sel["예상시간"] = (hours * (1 + 6 * sel.완주확률)).clip(lower=0.5)
     sel["가격원"] = (sel.현재가 * RATE).round(-2)
     # 예상 플레이 시간은 '리뷰 이후 추가' 시간이라, 리뷰까지의 시간을 더해야 총 시간이다
     sel["총시간"] = sel.예상시간 + hours

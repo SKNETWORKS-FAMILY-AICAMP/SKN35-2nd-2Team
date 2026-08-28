@@ -12,7 +12,8 @@ import streamlit as st
 
 from app._shared import get_all, page
 
-_, _, _, CARDS, _, _, _ = get_all()
+_, _, CARDS, _, META, _ = get_all()
+THR = float(META["임계값"])  # 0.5 가 아니다 — 데이터로 고른 판정 기준
 N = len(CARDS)
 
 page("🆚 사람 vs 모델",
@@ -126,7 +127,7 @@ if not ss.shown:
     if c2.button("🔴  그만뒀다", width="stretch"):
         pick = 1
     if pick is not None:
-        truth, ai = card["churn"], int(card["_p"] >= .5)
+        truth, ai = card["churn"], int(card["_p"] >= THR)
         ss.me += int(pick == truth)
         ss.ai += int(ai == truth)
         ss.log.append({
@@ -146,7 +147,7 @@ else:
     me_hit = last["당신"] == last["정답"]
     ai_hit = last["모델"] == last["정답"]
     st.markdown(
-        f'''<div class="verdict">
+        f'''<div class="answers">
           <div class="box {"hit" if me_hit else "miss"}">
             <div class="lbl">당신</div><div class="val">{last["당신"]}</div>
             <div class="tag">{"정답" if me_hit else "오답"}</div></div>
@@ -164,4 +165,4 @@ else:
         ss.shown = False
         st.rerun()
 
-st.caption(f"문제 {N}장은 정답 비율 6:6 무작위 표본입니다. 난이도를 조작하지 않았습니다.")
+st.caption(f"문제 {N}장은 정답 비율 {N//2}:{N//2} 무작위 표본입니다. 난이도를 조작하지 않았습니다 · 모델 판정 기준 {THR:.0%}")

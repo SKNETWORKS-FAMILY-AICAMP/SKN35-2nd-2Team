@@ -21,7 +21,8 @@ import streamlit as st                                          # noqa: E402
 
 from app.theme import (apply_theme, STEAM_BLUE, STEAM_GREEN,     # noqa: E402
                        STEAM_RED, STEAM_NAVY_LIGHT, STEAM_TEXT_MUTED)
-from app._predict import load_all, build_row, gauge, text_feats   # noqa: E402
+from app._predict import (load_all, load_catalog, build_row, predict,   # noqa: E402
+                          predict_many, explain, gauge, STEAM_IMG)
 
 PAGES = [
     ("pages/0_시작.py",                 "시작",                    "▶"),
@@ -68,14 +69,15 @@ def kpi_bar():
     발표에서 설명을 반복하지 않아도 된다.
     시작 화면에는 넣지 않는다 — 결과를 미리 보여주는 셈이 되기 때문이다.
     """
-    _, _, games, _, _, meta, _ = get_all()
-    churn, auc = float(meta["이탈률"]), float(meta["분류_AUC"])
-    name = meta["모델"].split("(")[0].strip()
+    _, games, _, _, meta, _ = get_all()
+    churn = 0.411                       # dataset_meta.json 의 이탈률
+    auc = float(meta.get("성능_봉인12게임", 0.7209))
+    name = meta["모델"]
     st.markdown(f"""
 <div class="kpis compact">
   <div class="kpi">
     <div class="top"><div class="ico">📊</div><div class="lab">학습 데이터</div></div>
-    <div class="val">{meta['행수']:,}<u>행</u></div>
+    <div class="val">{meta.get("학습행수", 139658):,}<u>행</u></div>
     <div class="sub">스팀 리뷰 · 30개 언어</div>
   </div>
   <div class="kpi">
@@ -92,7 +94,7 @@ def kpi_bar():
   <div class="kpi accent">
     <div class="top"><div class="ico">🎯</div><div class="lab">모델 성능</div></div>
     <div class="val">{auc:.3f}<u>AUC</u></div>
-    <div class="sub">⚠️ 임시 · {name}</div>
+    <div class="sub">봉인 12게임 · {name}</div>
   </div>
 </div>
 """, unsafe_allow_html=True)

@@ -11,12 +11,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from app._shared import (get_all, build_row, gauge, page,
+from app._shared import (get_all, build_row, predict, explain, gauge, page,
                          STEAM_BLUE, STEAM_GREEN, STEAM_RED,
                          STEAM_NAVY_LIGHT, STEAM_TEXT_MUTED)
-from app._explain import explain
 
-clf, reg, GAMES, _, _, META, LANG = get_all()
+MODEL, GAMES, _, _, META, LANG = get_all()
+THR = float(META["임계값"])
 
 page("🔍 작별 인사 판별기",
      "리뷰를 붙여넣으면 이 사람이 이 리뷰를 끝으로 게임을 접었을 확률을 알려줍니다.")
@@ -41,13 +41,9 @@ with left:
 
     if st.button("판별하기", width="stretch"):
         grow = GAMES[GAMES.game == gname].iloc[0]
-        X = build_row(review, hours, owned, nrev, voted.startswith("👍"), grow, LANG)
-        ss.res = {
-            "p": float(clf.predict_proba(X)[0, 1]),
-            "h": float(np.expm1(reg.predict(X)[0])),
-            "e": explain(clf, X),
-            "game": gname,
-        }
+        row = build_row(review, hours, owned, nrev, voted.startswith("👍"), grow, LANG)
+        df, raw = explain(row)
+        ss.res = {"p": predict(MODEL, META["_order"], row), "df": df, "game": gname}
 
 # ── 오른쪽 : 결과 ───────────────────────────────────────────────
 with right:
@@ -57,11 +53,10 @@ with right:
             '<div class="big">🎮</div>'
             '왼쪽에 리뷰를 넣고<br><b>판별하기</b>를 눌러보세요'
             '</div></div>', unsafe_allow_html=True)
-        st.caption("")
     else:
         r = ss.res
-        p, icon_msg = r["p"], gauge(r["p"])
-        icon, msg = icon_msg
+        p = r["p"]
+        icon, msg = gauge(p, THR)
 
         fig = go.Figure(go.Indicator(
             mode="gauge+number", value=p * 100,
@@ -69,14 +64,16 @@ with right:
             gauge={
                 "axis": {"range": [0, 100], "tickcolor": STEAM_TEXT_MUTED,
                          "tickfont": {"size": 10}},
-                "bar": {"color": STEAM_RED if p >= .65 else
-                        (STEAM_BLUE if p >= .45 else STEAM_GREEN), "thickness": .74},
+                "bar": {"color": STEAM_RED if p >= THR + .15 else
+                        (STEAM_BLUE if p >= THR else STEAM_GREEN), "thickness": .74},
                 "bgcolor": "rgba(0,0,0,0)",
                 "borderwidth": 1, "bordercolor": STEAM_NAVY_LIGHT,
+                # 판정선을 눈에 보이게 그린다 — 0.5 가 아니라 0.3735 다
+                "threshold": {"line": {"color": "#e8b64c", "width": 3},
+                              "thickness": .85, "value": THR * 100},
                 "steps": [
-                    {"range": [0, 45], "color": "rgba(164,208,7,.12)"},
-                    {"range": [45, 65], "color": "rgba(102,192,244,.12)"},
-                    {"range": [65, 100], "color": "rgba(224,92,92,.14)"},
+                    {"range": [0, THR * 100], "color": "rgba(164,208,7,.12)"},
+                    {"range": [THR * 100, 100], "color": "rgba(224,92,92,.12)"},
                 ]}))
         fig.update_layout(height=150, margin=dict(l=30, r=30, t=6, b=0),
                           paper_bgcolor="rgba(0,0,0,0)", font_color="#c7d5e0")
@@ -84,25 +81,25 @@ with right:
 
         a, b = st.columns(2)
         a.metric("판정", f"{icon} {msg}")
-        b.metric("예상 추가 플레이", f"{r['h']:.1f}시간",
-                 help="리뷰를 쓴 뒤 얼마나 더 할 것 같은지")
+        b.metric("판정 기준선", f"{THR:.1%}",
+                 help="이 값을 넘으면 이탈로 봅니다. 0.5가 아니라 데이터로 고른 값입니다")
 
         st.markdown("##### 왜 이렇게 판단했나")
-        e = r["e"].copy()
+        e = r["df"].copy()
         e["방향"] = np.where(e.기여 > 0, "이탈 쪽으로", "잔존 쪽으로")
         fig2 = px.bar(e.sort_values("기여"), x="기여", y="변수", orientation="h",
                       color="방향",
                       color_discrete_map={"이탈 쪽으로": STEAM_RED,
-                                          "잔존 쪽으로": STEAM_GREEN})
+                                          "잔존 쪽으로": STEAM_GREEN},
+                      custom_data=["기여율"])
+        fig2.update_traces(hovertemplate="%{y}<br>기여율 %{customdata[0]:.0%}<extra></extra>")
         fig2.update_layout(
             height=200, margin=dict(l=4, r=4, t=4, b=4),
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
             font_color="#c7d5e0", legend_title_text="",
-            legend=dict(orientation="h", y=-0.22, font=dict(size=11)),
+            legend=dict(orientation="h", y=-0.24, font=dict(size=11)),
             xaxis=dict(title="", gridcolor=STEAM_NAVY_LIGHT, tickfont=dict(size=11)),
             yaxis=dict(title="", tickfont=dict(size=12)))
         st.plotly_chart(fig2, width="stretch")
-        st.caption("빨간 막대는 이탈 확률을 올린 요인, 초록 막대는 낮춘 요인입니다.")
-
-st.caption("⚠️ 지금 모델은 리뷰의 **길이·느낌표·대문자**만 봅니다. "
-           "글의 **뜻**은 읽지 못합니다 — 최종 모델(임베딩)로 교체하면 읽습니다.")
+        st.caption("빨간 막대는 이탈 확률을 올린 요인, 초록 막대는 낮춘 요인입니다. "
+                   "막대에 마우스를 올리면 기여율이 나옵니다.")

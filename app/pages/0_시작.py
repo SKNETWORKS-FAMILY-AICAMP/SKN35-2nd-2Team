@@ -3,11 +3,12 @@
 import numpy as np
 import streamlit as st
 
-from app._shared import get_all, build_row, gauge
+from app._shared import get_all, build_row, predict, gauge
 from app.theme import apply_theme
 
 apply_theme()
-clf, reg, GAMES, CARDS, _, META, LANG = get_all()
+MODEL, GAMES, CARDS, _, META, LANG = get_all()
+THR = float(META["임계값"])
 
 st.markdown(
     "<h1 style='text-align:center;margin:8px 0 4px;font-size:30px'>"
@@ -35,13 +36,12 @@ with center:
         else:
             with st.spinner("리뷰 분석 중…"):
                 grow = GAMES[GAMES.game == gname].iloc[0]
-                X = build_row(text, hours, 250, 12, False, grow, LANG)
-                p = float(clf.predict_proba(X)[0, 1])
-                more = float(np.expm1(reg.predict(X)[0]))
-            icon, msg = gauge(p)
-            (st.error if p >= .65 else st.warning if p >= .45 else st.success)(
+                row = build_row(text, hours, 250, 12, False, grow, LANG)
+                p = predict(MODEL, META["_order"], row)
+            icon, msg = gauge(p, THR)
+            (st.error if p >= THR + .15 else st.warning if p >= THR else st.success)(
                 f"{icon}  이탈 확률 {p:.0%} — {msg}")
-            st.caption(f"예상 추가 플레이 {more:.1f}시간 · "
+            st.caption(f"판정 기준 {THR:.0%} · "
                        f"근거가 궁금하면 **작별 인사 판별기**로 가세요")
 
 st.write("")

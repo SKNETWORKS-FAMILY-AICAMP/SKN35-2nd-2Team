@@ -1,0 +1,685 @@
+<title>스팀 리뷰 이탈 전처리 결과서</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#FBFCFD; --surface:#FFFFFF; --surface-2:#F1F5F8; --surface-3:#E8EEF3;
+  --ink:#0F1720; --ink-2:#37424E; --ink-3:#6B7785;
+  --rule:#DCE3EA; --rule-2:#C0CAD4;
+  --accent:#23598F; --accent-2:#3C7CB8; --accent-soft:#E7EFF7;
+  --warn:#A2432A; --warn-soft:#F9EAE5;
+  --good:#2C6A50; --good-soft:#E5F0EA;
+  --shadow:0 1px 2px rgba(15,23,32,.05), 0 8px 24px -16px rgba(15,23,32,.28);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0C1015; --surface:#131A22; --surface-2:#19222B; --surface-3:#212C36;
+    --ink:#E9EEF3; --ink-2:#B3BEC9; --ink-3:#7B8794;
+    --rule:#242F3A; --rule-2:#36434F;
+    --accent:#78ADDF; --accent-2:#9BC5EC; --accent-soft:#14212D;
+    --warn:#E08D71; --warn-soft:#2A1A15;
+    --good:#74C39D; --good-soft:#12241C;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0C1015; --surface:#131A22; --surface-2:#19222B; --surface-3:#212C36;
+  --ink:#E9EEF3; --ink-2:#B3BEC9; --ink-3:#7B8794;
+  --rule:#242F3A; --rule-2:#36434F;
+  --accent:#78ADDF; --accent-2:#9BC5EC; --accent-soft:#14212D;
+  --warn:#E08D71; --warn-soft:#2A1A15;
+  --good:#74C39D; --good-soft:#12241C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans KR",-apple-system,"Segoe UI","Malgun Gothic",sans-serif;
+  font-weight:400; line-height:1.72; font-size:16px;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono","Consolas",monospace}
+
+/* ---------- shell ---------- */
+.shell{max-width:1180px;margin:0 auto;padding:0 24px 96px}
+@media(min-width:1060px){
+  .shell{display:grid;grid-template-columns:210px minmax(0,1fr);gap:56px;align-items:start}
+  .masthead{grid-column:1/-1}
+}
+
+/* ---------- masthead ---------- */
+.masthead{padding:68px 0 34px;border-bottom:2px solid var(--ink);margin-bottom:44px}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;
+}
+h1{
+  font-size:clamp(30px,4.6vw,46px);line-height:1.14;font-weight:600;
+  letter-spacing:-.022em;margin:0 0 18px;text-wrap:balance;
+}
+.sub{font-size:17px;color:var(--ink-2);max-width:60ch;margin:0 0 26px;font-weight:300}
+.meta{
+  display:flex;flex-wrap:wrap;gap:10px 26px;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);
+}
+.meta b{color:var(--ink-2);font-weight:500}
+.vtag{
+  display:inline-flex;align-items:center;gap:7px;padding:3px 10px;border-radius:3px;
+  background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);
+  font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;letter-spacing:.02em;
+}
+
+/* ---------- nav ---------- */
+nav{margin-bottom:48px}
+@media(min-width:1060px){nav{position:sticky;top:28px;margin-bottom:0}}
+.navlabel{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-3);padding-bottom:10px;
+  border-bottom:1px solid var(--rule);margin-bottom:12px;
+}
+nav ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+nav a{
+  display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:baseline;
+  padding:5px 8px;margin-left:-8px;border-radius:4px;
+  color:var(--ink-2);text-decoration:none;font-size:13.5px;line-height:1.45;
+  transition:background .12s,color .12s;
+}
+nav a span{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+nav a:hover{background:var(--surface-2);color:var(--accent)}
+nav a:hover span{color:var(--accent)}
+nav a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* ---------- sections ---------- */
+section{margin-bottom:64px;scroll-margin-top:24px}
+h2{
+  font-size:23px;font-weight:600;letter-spacing:-.015em;line-height:1.3;
+  margin:0 0 22px;padding-bottom:12px;border-bottom:1px solid var(--rule-2);
+  display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;
+}
+h2 .num{
+  font-family:"IBM Plex Mono",monospace;font-size:14px;font-weight:600;
+  color:var(--accent);letter-spacing:0;
+}
+h3{
+  font-size:16.5px;font-weight:600;margin:38px 0 14px;color:var(--ink);
+  letter-spacing:-.008em;
+}
+h4{
+  font-size:13px;font-weight:600;margin:32px 0 12px;color:var(--ink-2);
+  font-family:"IBM Plex Mono",monospace;letter-spacing:.04em;
+}
+h4::before{content:"▸ ";color:var(--accent)}
+p{margin:0 0 15px;max-width:66ch}
+.lede{font-size:16.5px;color:var(--ink-2);max-width:64ch}
+code{
+  font-family:"IBM Plex Mono",monospace;font-size:.875em;
+  background:var(--surface-2);border:1px solid var(--rule);
+  padding:.1em .38em;border-radius:3px;color:var(--ink);white-space:nowrap;
+}
+strong{font-weight:600}
+em{font-style:normal;color:var(--ink-3)}
+
+/* ---------- stat row ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:6px;
+  overflow:hidden;margin:0 0 26px}
+.stat{background:var(--surface);padding:16px 18px}
+.stat dt{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;
+}
+.stat dd{
+  margin:0;font-size:25px;font-weight:600;line-height:1.1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.stat dd small{font-size:13px;font-weight:400;color:var(--ink-3);margin-left:3px}
+.stat.hi dd{color:var(--accent)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 0 22px;border:1px solid var(--rule);border-radius:6px;
+  background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:min(100%,420px)}
+th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+thead th{
+  background:var(--surface-2);font-family:"IBM Plex Mono",monospace;
+  font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-3);white-space:nowrap;border-bottom:1px solid var(--rule-2);
+}
+tbody tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;
+  font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+td.c,th.c{text-align:center}
+td code{background:none;border:none;padding:0;color:var(--accent);font-size:.9em}
+tr.pick{background:var(--accent-soft)}
+tr.pick td{font-weight:500}
+.bad{color:var(--warn);font-weight:600}
+.ok{color:var(--good);font-weight:600}
+
+/* ---------- callouts ---------- */
+.note{
+  border-left:3px solid var(--accent);background:var(--surface-2);
+  padding:16px 20px;margin:0 0 22px;border-radius:0 5px 5px 0;
+}
+.note.w{border-left-color:var(--warn);background:var(--warn-soft)}
+.note.g{border-left-color:var(--good);background:var(--good-soft)}
+.note > :last-child{margin-bottom:0}
+.note p{max-width:62ch}
+.notetag{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--accent);
+  font-weight:600;margin-bottom:7px;
+}
+.note.w .notetag{color:var(--warn)}
+.note.g .notetag{color:var(--good)}
+
+/* ---------- formula / code block ---------- */
+pre{
+  font-family:"IBM Plex Mono",monospace;font-size:13px;line-height:1.62;
+  background:var(--surface-2);border:1px solid var(--rule);border-radius:5px;
+  padding:14px 16px;overflow-x:auto;margin:0 0 22px;color:var(--ink-2);
+}
+pre b{color:var(--accent);font-weight:600}
+
+/* ---------- column list ---------- */
+.cols{display:grid;gap:16px;margin-bottom:22px}
+.colgroup{border:1px solid var(--rule);border-radius:6px;background:var(--surface);
+  padding:14px 16px}
+.colgroup h5{
+  margin:0 0 9px;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;
+  display:flex;justify-content:space-between;gap:12px;
+}
+.colgroup h5 b{color:var(--accent);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;
+  background:var(--surface-2);border:1px solid var(--rule);
+  padding:2px 8px;border-radius:3px;color:var(--ink-2);
+}
+.chip i{font-style:normal;color:var(--ink-3);font-size:10.5px;margin-left:3px}
+.chip.k{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);
+  font-weight:600}
+.chip.x{opacity:.62}
+
+/* ---------- footer ---------- */
+footer{
+  border-top:1px solid var(--rule);padding-top:22px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);
+  display:flex;flex-wrap:wrap;gap:8px 28px;
+}
+</style>
+
+<div class="shell">
+
+<header class="masthead">
+  <div class="eyebrow">SKN35-2nd-2Team · 필수 산출물</div>
+  <h1>인공지능 데이터 전처리 결과서</h1>
+  <p class="sub">스팀 게임 리뷰를 쓴 그 순간, 이 사람이 게임을 계속할지 그만둘지 예측하기 위한 데이터 준비 과정과 그 근거.</p>
+  <div class="meta">
+    <span class="vtag">전처리 v1.2</span>
+    <span><b>대상</b> steam_raw.csv · 2026-08-25 07:30 UTC 수집</span>
+    <span><b>작성</b> 2026-08-25 · <b>수정</b> 2026-08-26</span>
+    <span><b>담당</b> 데이터 A</span>
+  </div>
+</header>
+
+<nav>
+  <div class="navlabel">목차</div>
+  <ol>
+    <li><a href="#s1"><span>1</span>개요</a></li>
+    <li><a href="#s2"><span>2</span>원본 28열 처리</a></li>
+    <li><a href="#s3"><span>3</span>신규 생성 15열</a></li>
+    <li><a href="#s4"><span>4</span>행 제거 내역</a></li>
+    <li><a href="#s5"><span>5</span>변수 묶음 두 종류</a></li>
+    <li><a href="#s6"><span>6</span>최종 컬럼 30열</a></li>
+    <li><a href="#s7"><span>7</span>재현성·버전</a></li>
+    <li><a href="#s8"><span>8</span>후속 확인 항목</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ══════════ 1 ══════════ -->
+<section id="s1">
+  <h2><span class="num">1</span>개요</h2>
+
+  <dl class="stats">
+    <div class="stat"><dt>원본 행</dt><dd>139,667</dd></div>
+    <div class="stat hi"><dt>전처리 결과</dt><dd>139,658</dd></div>
+    <div class="stat"><dt>원본 열</dt><dd>28</dd></div>
+    <div class="stat hi"><dt>최종 열</dt><dd>30</dd></div>
+    <div class="stat"><dt>이탈률</dt><dd>41.1<small>%</small></dd></div>
+  </dl>
+
+  <div class="tw"><table>
+    <thead><tr><th>구분</th><th class="n">개수</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>원본 그대로 유지</td><td class="n">15열</td><td>식별자·범주형·불리언</td></tr>
+      <tr><td>변환 후 대체</td><td class="n">5 → 6열</td><td>단위 변환·로그 변환·파생 분리</td></tr>
+      <tr><td><strong>데이터 누수로 제외</strong></td><td class="n bad">8열</td><td>정답에 사용했거나 미래 정보</td></tr>
+      <tr><td><strong>신규 생성</strong></td><td class="n ok">15열</td><td>정답 1 + 파생 14</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>정답(라벨)은 <code>churn</code> 이며 <strong>이탈 41.1% / 잔존 58.9%</strong> 입니다.</p>
+
+  <div class="note">
+    <span class="notetag">원칙</span>
+    <p>전처리는 <code>preprocess.py</code> <strong>한 파일에서만</strong> 수행합니다. 라벨과 파생 변수를 다른 곳에서 다시 만들지 않습니다. 정의가 갈라지면 조용히 어긋나기 때문입니다.</p>
+  </div>
+</section>
+
+<!-- ══════════ 2 ══════════ -->
+<section id="s2">
+  <h2><span class="num">2</span>원본 28열 처리 내역</h2>
+
+  <h3>2-1. 그대로 유지 — 15열</h3>
+  <div class="tw"><table>
+    <thead><tr><th>컬럼</th><th>처리</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td><code>recommendationid</code></td><td>유지</td><td>리뷰 식별. 모델 입력 아님</td></tr>
+      <tr><td><code>appid</code> · <code>steamid</code></td><td>유지</td><td>게임·유저 식별. 모델 입력 아님</td></tr>
+      <tr><td><code>game</code></td><td>유지</td><td>식별 + A셋 변수. 60종</td></tr>
+      <tr><td><code>genre_group</code></td><td>유지</td><td>5종</td></tr>
+      <tr><td><code>era</code></td><td>유지</td><td>4종</td></tr>
+      <tr><td><code>grade</code></td><td>유지</td><td>4종</td></tr>
+      <tr><td><code>release_year</code></td><td>문자형 변환</td><td>숫자가 아닌 <strong>범주</strong>로 취급. 18종</td></tr>
+      <tr><td><code>language</code></td><td>유지</td><td>30종</td></tr>
+      <tr><td><code>review</code></td><td>유지</td><td>딥러닝 입력용 원문</td></tr>
+      <tr><td><code>voted_up</code></td><td>True/False → 1/0</td><td class="n">81.8%</td></tr>
+      <tr><td><code>steam_purchase</code></td><td>True/False → 1/0</td><td class="n">86.2%</td></tr>
+      <tr><td><code>received_for_free</code></td><td>True/False → 1/0</td><td class="n">2.7%</td></tr>
+      <tr><td><code>early_access</code></td><td>True/False → 1/0</td><td class="n">5.0%</td></tr>
+      <tr><td><code>steam_deck</code></td><td>True/False → 1/0</td><td class="n">1.4%</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>2-2. 변환 후 대체 — 5열 → 6열</h3>
+  <div class="tw"><table>
+    <thead><tr><th>원본</th><th>대체 컬럼</th><th>변환 내용</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>playtime_at_review_min</code></td>
+        <td><code>hours_at_review</code><br><code>log_hours_at_review</code></td>
+        <td>분 → 시간. 값 범위가 <strong>0.08 ~ 22,013시간(27만 배)</strong> 이라 로그 변환 병행</td>
+      </tr>
+      <tr>
+        <td><code>num_games_owned</code></td>
+        <td><code>log_num_games</code><br><code>is_private</code></td>
+        <td><strong>0은 게임 0개가 아니라 프로필 비공개</strong>(51.5%). 0을 결측으로 바꾸고 로그 변환, 비공개 여부를 별도 컬럼으로 분리. 비공개는 −1로 표시</td>
+      </tr>
+      <tr>
+        <td><code>num_reviews</code></td>
+        <td><code>log_num_reviews</code></td>
+        <td>1 ~ 25,164건 → 로그 변환</td>
+      </tr>
+      <tr>
+        <td><code>created_ts</code><br><code>app_release_ts</code></td>
+        <td><code>game_age_days</code></td>
+        <td>리뷰 시각 − 게임 출시일. <strong>출시 후 며칠째에 쓴 리뷰인가</strong> (112 ~ 9,036일)</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <h3>2-3. 데이터 누수로 제외 — 8열</h3>
+  <p>정답을 만드는 데 사용했거나, <strong>리뷰 작성 시점에는 존재하지 않았던</strong> 정보입니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>제외 컬럼</th><th>제외 근거</th></tr></thead>
+    <tbody>
+      <tr><td><code>playtime_forever_min</code></td><td><strong>정답 그 자체.</strong> 이 값에서 정답을 계산했으므로 입력에 넣으면 답을 보고 푸는 것</td></tr>
+      <tr><td><code>playtime_2weeks_min</code></td><td>최근 2주 플레이 — <strong>미래 정보</strong></td></tr>
+      <tr><td><code>last_played_ts</code></td><td>마지막 접속 시각 — <strong>미래 정보</strong></td></tr>
+      <tr><td><code>updated_ts</code></td><td>리뷰 수정 시각 — 작성 이후의 사건</td></tr>
+      <tr><td><code>votes_up</code></td><td>다른 유저의 추천 수 — <strong>작성 시점엔 0</strong></td></tr>
+      <tr><td><code>votes_funny</code></td><td>다른 유저의 "웃김" 수 — 동일</td></tr>
+      <tr><td><code>comment_count</code></td><td>댓글 수 — 동일</td></tr>
+      <tr><td><code>weighted_vote_score</code></td><td>스팀이 매긴 도움됨 점수 — 동일</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>검증 — 일부러 누수시켜 보았습니다</h4>
+  <p>제외한 <code>playtime_forever_min</code> 을 입력에 넣어 학습해 비교했습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>조건</th><th class="n">ROC-AUC</th><th>판정</th></tr></thead>
+    <tbody>
+      <tr><td>누수 컬럼 포함</td><td class="n bad">0.998</td><td>정답을 보고 답한 결과</td></tr>
+      <tr><td>정상 (누수 제외)</td><td class="n ok">0.820</td><td>실제 예측</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <span class="notetag">차단 방식</span>
+    <p>금지 컬럼 목록을 코드에 상수(<code>LEAK_COLS</code>)로 정의하고, 학습 직전 <code>assert_no_leak()</code> 을 호출해 하나라도 섞이면 오류를 발생시킵니다. 사람이 기억하는 대신 코드가 막습니다.</p>
+  </div>
+</section>
+
+<!-- ══════════ 3 ══════════ -->
+<section id="s3">
+  <h2><span class="num">3</span>신규 생성 15열</h2>
+
+  <h3>3-1. 정답 — 1열</h3>
+  <div class="tw"><table>
+    <thead><tr><th>컬럼</th><th>계산식</th><th class="n">결과</th></tr></thead>
+    <tbody>
+      <tr class="pick"><td><code>churn</code></td>
+        <td>(총 플레이시간 − 리뷰 시점 플레이시간) &lt; 1시간 → 1</td>
+        <td class="n">이탈 41.1%</td></tr>
+    </tbody>
+  </table></div>
+  <p>관측 창(리뷰 작성 후 180~545일)은 <strong>수집 단계에서 이미 적용</strong>되었습니다. 리뷰를 쓴 지 얼마 안 된 사람은 아직 더 플레이할 시간이 없어 자동으로 이탈로 찍히기 때문입니다.</p>
+
+  <h4>이탈률 41.1% 가 뜻하는 것</h4>
+  <p><strong>우리가 선정한 60개 게임에서, 관측 창 안에 리뷰를 작성한 139,658명 중, 리뷰 작성 이후 추가 플레이가 1시간 미만인 사람의 비율</strong>입니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>부정확한 표현</th><th>이유</th></tr></thead>
+    <tbody>
+      <tr><td>"스팀 유저의 41%가 이탈한다"</td><td><strong>리뷰를 작성한 사람</strong>만 대상입니다. 리뷰 작성자는 전체 유저의 일부입니다</td></tr>
+      <tr><td>"게임 유저의 41%가 이탈한다"</td><td>우리가 선정한 <strong>60개 게임</strong>에 한정됩니다</td></tr>
+      <tr><td>"41%가 게임을 영구히 그만두었다"</td><td><strong>"해당 리뷰 이후 1시간 미만"</strong> 입니다. 이후 복귀 가능성은 배제하지 못합니다</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>41.1% 는 대푯값으로 사용할 수 없습니다</h4>
+  <div class="tw"><table>
+    <thead><tr><th></th><th class="n">값</th><th>게임</th></tr></thead>
+    <tbody>
+      <tr><td>최저</td><td class="n ok">9.7%</td><td>Trailmakers</td></tr>
+      <tr><td>최고</td><td class="n bad">88.8%</td><td>We Were Here Expeditions</td></tr>
+      <tr><td>게임별 중앙값</td><td class="n">47.1%</td><td>—</td></tr>
+      <tr><td>게임별 표준편차</td><td class="n">20.0%p</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+  <p>전체 평균(41.1%)과 게임별 중앙값(47.1%)이 6%p 차이납니다. <strong>리뷰 수가 많은 게임일수록 이탈률이 낮기 때문</strong>입니다(상관 −0.47). 리뷰 수가 많은 게임이 전체 행에서 큰 비중을 차지해 평균을 끌어내립니다. 따라서 보고 시에는 평균 하나가 아니라 <strong>분포와 함께</strong> 제시합니다.</p>
+
+  <h4>라벨의 한계 — "이탈"의 의미가 장르마다 다릅니다</h4>
+  <p>게임 평가등급별 이탈률에서 예상과 반대되는 결과가 나왔습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>게임 평가</th><th class="n">이탈률</th></tr></thead>
+    <tbody>
+      <tr><td>매우긍정</td><td class="n">37.6%</td></tr>
+      <tr><td>대체로긍정</td><td class="n">39.1%</td></tr>
+      <tr><td>평가나쁨</td><td class="n">43.6%</td></tr>
+      <tr class="pick"><td><strong>압도적긍정</strong></td><td class="n bad">46.4%</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>평가가 가장 좋은 게임의 이탈률이 가장 높습니다.</strong> 장르를 고정해도 동일합니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th></th><th class="n">멀티/경쟁</th><th class="n">싱글 서사</th></tr></thead>
+    <tbody>
+      <tr><td>매우긍정</td><td class="n ok">20.7%</td><td class="n">56.6%</td></tr>
+      <tr><td>압도적긍정</td><td class="n">35.2%</td><td class="n bad">63.7%</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note w">
+    <span class="notetag">한계 — 결과 해석 시 반드시 함께 제시</span>
+    <p><strong>멀티/경쟁</strong>은 게임이 좋으면 계속합니다. 종료 지점이 없기 때문입니다. <strong>싱글 서사</strong>는 게임이 좋으면 끝까지 진행한 뒤 종료합니다.</p>
+    <p>즉 현재 라벨은 <strong>"흥미를 잃고 이탈"</strong> 과 <strong>"완주 후 종료"</strong> 를 구분하지 못합니다. 구분하려면 게임별 평균 클리어 시간 등 추가 정보가 필요하며, 이는 현재 수집 범위 밖입니다.</p>
+  </div>
+
+  <h3>3-2. 수치 변환 — 4열</h3>
+  <div class="tw"><table>
+    <thead><tr><th>컬럼</th><th>계산식</th><th class="n">최소</th><th class="n">중앙</th><th class="n">최대</th></tr></thead>
+    <tbody>
+      <tr><td><code>hours_at_review</code></td><td>분 ÷ 60</td><td class="n">0.08</td><td class="n">13.07</td><td class="n">22,013</td></tr>
+      <tr><td><code>log_hours_at_review</code></td><td>log(1+시간)</td><td class="n">0.08</td><td class="n">2.64</td><td class="n">10.00</td></tr>
+      <tr><td><code>log_num_games</code></td><td>log(1+보유수), 비공개 −1</td><td class="n">−1</td><td class="n">−1</td><td class="n">10.52</td></tr>
+      <tr><td><code>log_num_reviews</code></td><td>log(1+리뷰수)</td><td class="n">0.69</td><td class="n">2.20</td><td class="n">10.13</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>3-3. 맥락 — 2열</h3>
+  <div class="tw"><table>
+    <thead><tr><th>컬럼</th><th>계산식</th><th class="n">분포</th></tr></thead>
+    <tbody>
+      <tr><td><code>game_age_days</code></td><td>리뷰 시각 − 게임 출시일</td><td class="n">112 / 2,538 / 9,036일</td></tr>
+      <tr><td><code>is_private</code></td><td>보유 게임 수가 0인가</td><td class="n">51.5% 비공개</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>3-4. 리뷰 텍스트에서 추출 — 7열</h3>
+  <p class="lede"><strong>언어를 이해하지 않고도 모든 언어에서 동일하게 추출 가능한 신호</strong>입니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>컬럼</th><th>계산식</th><th class="n">분포 / 비율</th></tr></thead>
+    <tbody>
+      <tr><td><code>review_len</code></td><td>글자 수</td><td class="n">0 / 45 / 8,000</td></tr>
+      <tr><td><code>review_words</code></td><td>단어 수</td><td class="n">0 / 7 / 1,775</td></tr>
+      <tr><td><code>review_len_z</code></td><td>언어별 정규화된 길이 (아래)</td><td class="n">−0.16 / 0.00 / 10.00</td></tr>
+      <tr><td><code>has_text</code></td><td>본문이 있는가</td><td class="n">99.6%</td></tr>
+      <tr><td><code>excl_ratio</code></td><td>느낌표 비율</td><td class="n">중앙 0.00</td></tr>
+      <tr><td><code>caps_ratio</code></td><td>대문자 비율 (알파벳 중)</td><td class="n">중앙 0.01</td></tr>
+      <tr><td><code>has_repeat</code></td><td>같은 글자 4회 이상 반복 (ㅋㅋㅋㅋ, !!!!)</td><td class="n">6.1%</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>리뷰 길이를 언어별로 정규화한 이유</h4>
+  <p>글자 수가 언어마다 전혀 다른 의미를 가집니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>언어</th><th class="n">글자 수 중앙값</th></tr></thead>
+    <tbody>
+      <tr><td>일본어</td><td class="n">81자</td></tr>
+      <tr><td>영어</td><td class="n">57자</td></tr>
+      <tr><td>러시아어</td><td class="n">45자</td></tr>
+      <tr><td>중국어(간체)</td><td class="n">17자</td></tr>
+      <tr><td>한국어</td><td class="n">15자</td></tr>
+    </tbody>
+  </table></div>
+  <p>영어가 한국어의 <strong>약 4배</strong>입니다. 한자·한글이 정보 밀도가 높기 때문입니다. 글자 수를 그대로 사용하면 모델이 <strong>"한국어·중국어 리뷰는 성의가 없다"</strong> 고 잘못 학습합니다.</p>
+  <pre>review_len_z = (글자수 − <b>해당 언어 중앙값</b>) ÷ <b>전 언어 공통 표준편차</b></pre>
+  <p>기준값은 <code>lang_stats.json</code> 에 저장하여, <strong>화면(Streamlit)에서도 동일한 기준</strong>을 사용합니다.</p>
+
+  <h4>표본이 적은 언어 처리 — 팀 검토 중 두 차례 발견하여 수정</h4>
+  <p><strong>설계 초안</strong>은 언어별로 중앙값과 표준편차를 모두 계산했습니다. 표본이 적은 언어에서 두 가지 문제가 연달아 나왔습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="c">차수</th><th>발견</th><th>증상</th></tr></thead>
+    <tbody>
+      <tr><td class="c mono">1차</td><td>아랍어 1건 → 표준편차 계산 불가, 대체값 1.0</td><td>200자 리뷰의 z 가 <span class="bad">197</span></td></tr>
+      <tr><td class="c mono">2차</td><td>노르웨이어 197건이 전부 짧음 → 표준편차 75</td><td>2000자 리뷰의 z 가 <span class="bad">26.5</span><br><em>같은 2000자가 영어에서는 3.6</em></td></tr>
+    </tbody>
+  </table></div>
+  <p>2차는 <strong>표본 하한만으로는 막을 수 없는 문제</strong>입니다. 노르웨이어는 197건으로 하한(30건)을 여유 있게 넘겼지만, 그 197건이 모두 짧아서 표준편차가 과소추정됐습니다.</p>
+  <div class="note w">
+    <span class="notetag">핵심 문제</span>
+    <p><strong>언어끼리 값을 비교할 수 없다</strong>는 것입니다. 이 변수의 목적이 <em>"언어차를 걷어내고 길이만 보기"</em> 인데, 정반대 결과가 나왔습니다.</p>
+  </div>
+  <p><strong>해결</strong> — 언어별 표준편차를 쓰지 않고 <strong>전 언어 공통 표준편차</strong>를 씁니다. 언어마다 다르게 쓰는 것은 기본 길이(중앙값)뿐입니다. 성능을 실측해 확인한 뒤 결정했습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>표준편차 방식</th><th class="n">노르웨이 2000자</th><th class="n">영어 2000자</th><th class="n">격차</th><th class="n">로지스틱</th><th class="n">부스팅</th></tr></thead>
+    <tbody>
+      <tr><td>언어별 (초안)</td><td class="n bad">26.50</td><td class="n">3.62</td><td class="n">7.3배</td><td class="n">0.7647</td><td class="n">0.8181</td></tr>
+      <tr><td>전체의 30% 하한</td><td class="n">10.00</td><td class="n">3.62</td><td class="n">2.8배</td><td class="n">0.7647</td><td class="n">0.8176</td></tr>
+      <tr><td>전체의 50% 하한</td><td class="n">7.81</td><td class="n">3.62</td><td class="n">2.2배</td><td class="n">0.7647</td><td class="n">0.8176</td></tr>
+      <tr class="pick"><td><strong>전체 공통 (채택)</strong></td><td class="n ok">3.90</td><td class="n">3.62</td><td class="n">1.1배</td><td class="n">0.7647</td><td class="n">0.8181</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note g">
+    <span class="notetag">판단 근거</span>
+    <p><strong>언어별 표준편차는 성능 이득이 없었습니다.</strong> 이득이 없는데 버그가 생기는 쪽을 택할 이유가 없어 가장 단순한 방식을 골랐습니다.</p>
+  </div>
+  <p>수정 후 — 모든 언어가 같은 글자수에 같은 값을 받습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>언어</th><th class="n">표본</th><th class="n">200자</th><th class="n">2000자</th><th class="n">8000자</th></tr></thead>
+    <tbody>
+      <tr><td>english</td><td class="n">67,115</td><td class="n">+0.28</td><td class="n">+3.84</td><td class="n">+10.00</td></tr>
+      <tr><td>norwegian</td><td class="n">197</td><td class="n">+0.35</td><td class="n">+3.90</td><td class="n">+10.00</td></tr>
+      <tr><td>arabic</td><td class="n">1</td><td class="n">+0.31</td><td class="n">+3.86</td><td class="n">+10.00</td></tr>
+      <tr><td>미수집 언어 (히브리어 등)</td><td class="n">0</td><td class="n">+0.31</td><td class="n">+3.86</td><td class="n">+10.00</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>추가 안전장치</strong> — <code>Z_CLIP = 10.0</code> 으로 값의 범위를 제한합니다. 학습 데이터에서 여기 걸리는 것은 <strong>261행(0.19%)</strong> 이고 전부 3,000자 이상 리뷰라, <em>"엄청 길다"</em> 는 의미는 잘려도 보존됩니다.</p>
+  <p>트리 모델은 값의 크기가 아니라 순서만 보므로 영향이 없습니다. 그러나 <strong>로지스틱회귀·MLP 는 값을 계수에 곱하므로</strong>, 이 변수 하나가 예측을 지배할 수 있어 상한이 필요합니다.</p>
+
+  <h3>3-5. 급증 구간 — 1열</h3>
+  <div class="tw"><table>
+    <thead><tr><th>컬럼</th><th>계산식</th><th class="n">비율</th></tr></thead>
+    <tbody>
+      <tr><td><code>is_spike</code></td><td>그날 그 게임의 리뷰 수가 <strong>평소(중앙값)의 3배 이상</strong>인가</td><td class="n">8.6%</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>설계 의도</strong> — 스팀 세일이 이탈에 영향을 줄 수 있다는 팀 내 제안에서 출발했습니다. 다만 세일 날짜표를 외부에서 가져오는 대신, <strong>데이터에서 직접 "리뷰가 몰린 날"을 탐지</strong>하는 방식을 택했습니다. 이 방식은 세일뿐 아니라 대형 업데이트·DLC 출시·화제성 급증을 모두 포착합니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>사례</th><th>날짜</th><th class="n">리뷰 수</th><th class="n">평소</th><th class="n">배수</th></tr></thead>
+    <tbody>
+      <tr><td>DJMAX RESPECT V</td><td class="mono">2025-06-12</td><td class="n">1,072건</td><td class="n">8건</td><td class="n bad">134배</td></tr>
+      <tr><td>The Texas Chain Saw Massacre</td><td class="mono">2025-05-14</td><td class="n">92건</td><td class="n">5건</td><td class="n">18배</td></tr>
+    </tbody>
+  </table></div>
+  <p>598일이 급증일로 판정되었고 해당 리뷰 11,967건(8.6%)이 표시되었습니다. 급증일 리뷰의 이탈률은 <strong>38.5%</strong> 로, 평소(41.4%)보다 <strong>2.9%p 낮았습니다.</strong></p>
+</section>
+
+<!-- ══════════ 4 ══════════ -->
+<section id="s4">
+  <h2><span class="num">4</span>행 제거 내역</h2>
+  <div class="tw"><table>
+    <thead><tr><th>사유</th><th class="n">건수</th><th class="n">비율</th></tr></thead>
+    <tbody>
+      <tr><td>리뷰 후 플레이 시간이 <strong>음수</strong></td><td class="n">9건</td><td class="n">0.006%</td></tr>
+    </tbody>
+  </table></div>
+  <p><code>playtime_forever &lt; playtime_at_review</code> 인 경우로, 스팀 측 기록 오류로 판단하여 제거했습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>점검 항목</th><th class="n">결과</th></tr></thead>
+    <tbody>
+      <tr><td>결측치</td><td class="n ok">0</td></tr>
+      <tr><td>리뷰 중복</td><td class="n ok">0</td></tr>
+      <tr><td>같은 유저·게임 중복</td><td class="n ok">0</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ══════════ 5 ══════════ -->
+<section id="s5">
+  <h2><span class="num">5</span>변수 묶음 두 종류</h2>
+  <p class="lede">평가 방식에 따라 사용할 변수 묶음이 달라집니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th></th><th class="c">A셋</th><th class="c">B셋</th></tr></thead>
+    <tbody>
+      <tr><td>변수 수</td><td class="c n">25</td><td class="c n">24</td></tr>
+      <tr><td>게임 이름 <code>game</code></td><td class="c"><strong>포함</strong></td><td class="c bad"><strong>제외</strong></td></tr>
+      <tr><td>사용 목적</td><td class="c">랜덤 분할 평가</td><td class="c">게임 단위 분할 평가</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>근거</strong> — 게임 단위로 train/test를 나누면 학습에 없던 게임이 시험에 등장합니다. 이때 게임 이름은 처음 보는 값이므로 정보가 되지 못합니다. 대신 <code>genre_group</code>·<code>era</code>·<code>grade</code>·<code>game_age_days</code> 등 <strong>게임의 속성</strong>으로 판단해야 처음 보는 게임도 예측할 수 있습니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th>변수 묶음</th><th class="n">랜덤 분할</th><th class="n">게임 단위 분할</th></tr></thead>
+    <tbody>
+      <tr><td>A셋 (게임 이름 포함)</td><td class="n">0.820</td><td class="n">0.754</td></tr>
+      <tr><td>B셋 (게임 속성만)</td><td class="n">0.817</td><td class="n">0.748</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note g">
+    <span class="notetag">해석</span>
+    <p>게임 이름을 제거해도 성능이 유지된다는 것은, 모델이 <strong>게임 이름을 암기한 것이 아니라 게임 속성을 학습</strong>했음을 시사합니다.</p>
+  </div>
+</section>
+
+<!-- ══════════ 6 ══════════ -->
+<section id="s6">
+  <h2><span class="num">6</span>최종 컬럼 목록 — 30열</h2>
+  <div class="cols">
+    <div class="colgroup">
+      <h5><span>식별용 — 모델 입력 아님</span><b>4</b></h5>
+      <div class="chips">
+        <span class="chip x">recommendationid</span><span class="chip x">appid</span>
+        <span class="chip x">steamid</span><span class="chip x">game</span>
+      </div>
+    </div>
+    <div class="colgroup">
+      <h5><span>모델 입력 — 수치</span><b>10</b></h5>
+      <div class="chips">
+        <span class="chip">hours_at_review</span><span class="chip">log_hours_at_review</span>
+        <span class="chip">log_num_games</span><span class="chip">log_num_reviews</span>
+        <span class="chip">game_age_days</span><span class="chip">review_len</span>
+        <span class="chip">review_words</span><span class="chip">review_len_z</span>
+        <span class="chip">excl_ratio</span><span class="chip">caps_ratio</span>
+      </div>
+    </div>
+    <div class="colgroup">
+      <h5><span>모델 입력 — 0/1</span><b>9</b></h5>
+      <div class="chips">
+        <span class="chip">voted_up</span><span class="chip">steam_purchase</span>
+        <span class="chip">received_for_free</span><span class="chip">early_access</span>
+        <span class="chip">steam_deck</span><span class="chip">is_private</span>
+        <span class="chip">is_spike</span><span class="chip">has_text</span>
+        <span class="chip">has_repeat</span>
+      </div>
+    </div>
+    <div class="colgroup">
+      <h5><span>모델 입력 — 범주</span><b>5</b></h5>
+      <div class="chips">
+        <span class="chip">language<i>30</i></span><span class="chip">genre_group<i>5</i></span>
+        <span class="chip">era<i>4</i></span><span class="chip">grade<i>4</i></span>
+        <span class="chip">release_year<i>18</i></span>
+      </div>
+    </div>
+    <div class="colgroup">
+      <h5><span>정답 · 딥러닝용 원문</span><b>2</b></h5>
+      <div class="chips">
+        <span class="chip k">churn</span><span class="chip">review</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 7 ══════════ -->
+<section id="s7">
+  <h2><span class="num">7</span>재현성 · 버전 관리</h2>
+  <div class="tw"><table>
+    <thead><tr><th>항목</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td>원본</td><td><code>03_수집/steam_raw.csv</code> — 수정 금지</td></tr>
+      <tr><td>전처리</td><td><code>04_전처리/preprocess.py</code></td></tr>
+      <tr><td>실행</td><td><code>uv run python preprocess.py</code></td></tr>
+      <tr><td>결과</td><td><code>dataset.csv</code> · <code>lang_stats.json</code> · <code>dataset_meta.json</code></td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>원본만 있으면 언제든 동일한 결과를 재생성</strong>할 수 있습니다. 전처리 기준을 변경할 경우(예: 이탈 판정 1시간 → 2시간) <code>preprocess.py</code> 의 <code>CHURN_HOURS</code> 상수 한 곳만 수정하면 됩니다.</p>
+
+  <h3>버전 관리</h3>
+  <p>전처리 규칙이 바뀌면 <code>VERSION</code> 을 올리고 <code>CHANGELOG</code> 에 사유를 적습니다. 실행하면 <code>dataset_meta.json</code> 이 함께 생성됩니다.</p>
+  <pre>{ "전처리_버전": <b>"1.2"</b>, "이번_변경": "리뷰 길이 표준편차를 전 언어 공통으로 ...",
+  "생성일시": "2026-08-26 16:26", "행수": 139658, "이탈률": 0.4112 }</pre>
+  <p><strong>모델·화면 담당자가 자기 파일이 최신인지 눈으로 확인</strong>할 수 있어야 하기 때문입니다. 파일 크기가 68MB라 매번 다시 받게 하면 팀 전체가 시간을 낭비합니다.</p>
+  <div class="tw"><table>
+    <thead><tr><th class="c">버전</th><th>날짜</th><th>변경</th></tr></thead>
+    <tbody>
+      <tr><td class="c mono">1.0</td><td class="mono">2026-08-25</td><td>최초 — 라벨·파생변수 15열, 누수 8열 제외</td></tr>
+      <tr><td class="c mono">1.1</td><td class="mono">2026-08-26</td><td>표본 30건 미만 언어의 길이 기준을 전체 통계로 대체 (§3-4). dataset.csv 1행 변동</td></tr>
+      <tr class="pick"><td class="c mono"><strong>1.2</strong></td><td class="mono">2026-08-26</td><td>리뷰 길이 표준편차를 <strong>전 언어 공통</strong>으로 변경 + <code>Z_CLIP = 10</code> (§3-4). 성능 지표 변동 없음</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note g">
+    <span class="notetag">이 구조가 실제로 작동한 사례</span>
+    <p>v1.1 수정에서 <strong>"139,658행 중 1행만 달라졌다"를 확인할 수 있었던 것</strong> 자체가 이 구조의 효과입니다. 원본이 보존돼 있고 전처리가 한 파일에만 있어서, 예전 방식으로 다시 계산해 비교할 수 있었습니다.</p>
+    <p>전처리가 노트북 셀에 흩어져 있었다면 영향 범위를 알 수 없어 <strong>팀원 3명이 각자 작업을 다시 해야 했을 것</strong>입니다.</p>
+  </div>
+</section>
+
+<!-- ══════════ 8 ══════════ -->
+<section id="s8">
+  <h2><span class="num">8</span>후속 확인 예정 항목</h2>
+  <div class="tw"><table>
+    <thead><tr><th>항목</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td>라벨 기준 민감도</td><td>이탈 판정을 0.5 / 1 / 5시간으로 변경해 결론이 유지되는지</td></tr>
+      <tr><td>관측 창 민감도</td><td>90 / 180 / 270일로 변경해 확인</td></tr>
+      <tr><td>불균형 처리</td><td><code>class_weight</code> vs SMOTE 비교 — SMOTE는 <strong>분할 이후에만</strong> 적용</td></tr>
+      <tr><td>게임 단위 분할 편차</td><td>조각별 AUC가 0.688~0.829로 변동. 평균과 편차 함께 보고</td></tr>
+      <tr><td>표본 적은 언어</td><td>아랍어 1건. 재수집 시 30건 미만 언어가 늘어나는지 확인</td></tr>
+      <tr><td><strong>완주 vs 이탈 구분</strong></td><td>게임별 평균 클리어 시간을 확보해 "다 깨서 종료"를 분리할 수 있는지 (§3-1)</td></tr>
+      <tr><td>게임별 이탈률 분산</td><td>9.7~88.8%. 게임 속성만으로 이 분산을 얼마나 설명하는지</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>
+  <span>전처리 v1.2</span>
+  <span>139,658행 × 30열</span>
+  <span>이탈률 41.1%</span>
+  <span>preprocess.py 단일 소스</span>
+</footer>
+
+</main>
+</div>

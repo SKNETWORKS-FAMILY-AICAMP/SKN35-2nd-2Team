@@ -1,115 +1,133 @@
 # -*- coding: utf-8 -*-
 """
-프로토타입 화면 전용 예측 — 임시 모델(HistGradientBoosting)을 쓴다.
+화면이 쓰는 예측 진입점 — **최종 모델(LightGBM)** 을 쓴다.
 
-★ 이건 최종이 아니다.
-  최종 예측은 src/predict.py 의 predict_one() 이다(MLP + 임베딩).
-  화면을 먼저 만들어 보여주려고 가벼운 임시 모델을 붙여둔 것이고,
-  최종 모델로 바꿀 때는 app/_shared.py 의 import 한 줄만 고치면 된다.
-
-여기서 하는 일은 하나뿐이다 —
+여기서 하는 일은 하나뿐이다.
 **사람이 화면에 입력한 것을 학습할 때와 똑같은 숫자로 바꾸는 것.**
 
 이 변환을 화면 쪽에서 따로 짜면 안 된다. 미묘하게 달라지고,
-에러 없이 조용히 틀린 예측이 나온다. (실제로 겪었다: 언어별 기본값이
+에러 없이 조용히 틀린 예측이 나온다. (실제로 겪었다 — 언어별 기본값이
 화면에만 따로 박혀 있어서 review_len_z 가 155 까지 튄 적이 있다)
+
+모델 정보
+    models/ml_model.joblib        LightGBM 튜닝본 · 전체 30개 언어 139,658행
+    models/ml_threshold.json      0.3735  <- 0.5 가 아니다
+    성능                          랜덤 0.818 · 게임5조각 0.748 · 봉인12게임 0.721
+
+★ 이 모델은 파이프라인이 아니라 순수 LGBMClassifier 다.
+  열 순서와 범주값을 맞춰줘야 한다. 그 처리는 팀원이 만든
+  src/explain_ml.to_model_frame() 이 해준다. 직접 하지 말 것.
 """
 import json
 import re
 
-import joblib
 import numpy as np
 import pandas as pd
 
 from src.config import DATA_PROC, MODELS, LANG_STATS, ENC_READ
-from src.preprocess import FEATURES_B
+from src.explain_ml import explain_one, load_final, to_model_frame
+from src.preprocess import featurize
 
-# 프로토타입 전용 파일들. 팀 규칙은 "주소는 config.py 에서만" 이지만,
-# 이 파일들은 임시 모델과 함께 사라질 것이라 공유 config 를 늘리지 않는다.
-# 폴더 위치는 config 의 DATA_PROC / MODELS 에서 받아오므로 하드코딩은 없다.
-CLF_MODEL = MODELS / "clf.joblib"            # 이탈 확률 (임시)
-REG_MODEL = MODELS / "reg.joblib"            # 예상 추가 플레이 시간 (임시)
-MODEL_META = MODELS / "meta.json"
-GAMES_CSV = DATA_PROC / "games.csv"          # 게임 60개 속성
-CARDS_JSON = DATA_PROC / "cards.json"        # 사람 vs 모델 문제 카드
-UNSEEN_CSV = DATA_PROC / "unseen.csv"        # 게임 단위 분할 결과
-CATALOG_CSV = DATA_PROC / "catalog.csv"      # 추천용 게임 402개
-
-
-def load_all():
-    """화면이 필요로 하는 것 전부. Streamlit 쪽에서 캐시를 씌워 쓴다."""
-    return (joblib.load(CLF_MODEL),
-            joblib.load(REG_MODEL),
-            pd.read_csv(GAMES_CSV, encoding=ENC_READ),
-            json.load(open(CARDS_JSON, encoding=ENC_READ)),
-            pd.read_csv(UNSEEN_CSV, encoding=ENC_READ),
-            json.load(open(MODEL_META, encoding=ENC_READ)),
-            json.load(open(LANG_STATS, encoding=ENC_READ)))
-
-
-def load_catalog():
-    """추천용 게임 카탈로그(우리 60개 + 처음 보는 게임). 없으면 None."""
-    return pd.read_csv(CATALOG_CSV, encoding=ENC_READ) if CATALOG_CSV.exists() else None
-
+# 화면 전용 파일들. 팀 공유 config.py 를 늘리지 않는다 —
+# 화면이 사라지면 같이 사라질 것들이라서. 폴더는 config 에서 받는다.
+GAMES_CSV = DATA_PROC / "games.csv"
+CARDS_JSON = DATA_PROC / "cards.json"
+UNSEEN_CSV = DATA_PROC / "unseen.csv"
+CATALOG_CSV = DATA_PROC / "catalog.csv"
+ML_META = MODELS / "ml_meta.json"
 
 STEAM_IMG = "https://cdn.akamai.steamstatic.com/steam/apps/{}/header.jpg"
 
 
-def text_feats(t):
-    """언어를 몰라도 뽑을 수 있는 신호. preprocess 의 _text_features 와 같은 정의."""
-    t = t or ""
-    n = len(t)
-    letters = [c for c in t if c.isalpha()]
+def load_all():
+    """화면이 필요로 하는 것 전부. Streamlit 쪽에서 캐시를 씌워 쓴다."""
+    model, order, thr, meta = load_final()
+    games = pd.read_csv(GAMES_CSV, encoding=ENC_READ)
+    # games.csv 에는 설명이 없다. catalog.csv 를 만들 때 스팀에서 같이 받아뒀고
+    # 우리 60개 중 58개가 거기 들어 있으니 appid 로 붙여 온다. 새로 받을 게 없다.
+    if CATALOG_CSV.exists():
+        cat = pd.read_csv(CATALOG_CSV, encoding=ENC_READ)
+        if "설명" in cat.columns:
+            games = games.merge(cat[["appid", "설명"]].drop_duplicates("appid"),
+                                on="appid", how="left")
+    cards = json.load(open(CARDS_JSON, encoding=ENC_READ))
+    unseen = pd.read_csv(UNSEEN_CSV, encoding=ENC_READ)
+    lang = json.load(open(LANG_STATS, encoding=ENC_READ))
+    meta = {**meta, "임계값": thr, "_order": order}
+    return model, games, cards, unseen, meta, lang
+
+
+def load_catalog():
+    """추천용 게임 카탈로그. 없으면 None."""
+    return pd.read_csv(CATALOG_CSV, encoding=ENC_READ) if CATALOG_CSV.exists() else None
+
+
+def _game_dict(g):
+    """games.csv 또는 catalog.csv 의 한 줄 -> featurize 가 받는 형태."""
     return {
-        "review_len": n,
-        "review_words": len(t.split()),
-        "has_text": int(n > 0),
-        "excl_ratio": t.count("!") / n if n else 0.0,
-        "caps_ratio": (sum(c.isupper() for c in letters) / len(letters)) if letters else 0.0,
-        "has_repeat": int(bool(re.search(r"(.)\1{3,}", t))),
+        "genre_group": g["genre_group"],
+        "era": g["era"],
+        "grade": g["grade"],
+        "release_year": int(g["release_year"]),
+        # featurize 는 출시 시각(초)을 받아 game_age_days 를 만든다.
+        # 표에는 이미 계산된 game_age_days 만 있으므로 거꾸로 되돌린다.
+        "app_release_ts": _NOW - int(g["game_age_days"]) * 86400,
+        "game": g.get("game", "UNKNOWN"),
     }
+
+
+_NOW = 1787643023        # 수집 기준 시각 (03_수집/manifest.json 의 기준_unix)
 
 
 def build_row(review, hours, owned, n_reviews, voted_up, game_row, lang_stats,
-              language="english", steam_purchase=1, free=0, ea=0, deck=0):
-    """화면 입력 한 줄 -> 모델이 먹는 24개 변수."""
-    tf = text_feats(review)
-
-    # 언어마다 다른 것은 "기본 길이"(중앙값) 하나뿐이고, 퍼지는 정도는 전 언어 공통.
-    # 목록에 없는 언어(히브리어 등)는 전체 중앙값을 쓴다.
-    med = lang_stats["median"].get(language, lang_stats["median_기본"])
-    std = lang_stats["std_공통"]
-    clip = lang_stats["_z_clip"]
-
-    row = {
-        "hours_at_review": hours,
-        "log_hours_at_review": np.log1p(hours),
-        "log_num_games": np.log1p(owned) if owned > 0 else -1,
-        "log_num_reviews": np.log1p(n_reviews),
-        "game_age_days": float(game_row["game_age_days"]),
-        "review_len_z": float(np.clip((tf["review_len"] - med) / std, -clip, clip)),
-        "is_private": int(owned == 0),
-        "is_spike": 0,                      # 화면에서는 알 수 없음 - 평소로 간주
+              language="english"):
+    """화면 입력 한 줄 -> 모델이 먹는 표 한 줄."""
+    return featurize({
+        "review": review,
         "language": language,
-        "genre_group": game_row["genre_group"],
-        "era": game_row["era"],
-        "grade": game_row["grade"],
-        "release_year": int(game_row["release_year"]),
-        "voted_up": int(voted_up),
-        "steam_purchase": int(steam_purchase),
-        "received_for_free": int(free),
-        "early_access": int(ea),
-        "steam_deck": int(deck),
-        **tf,
-    }
-    # FEATURES_B 순서로 맞춘다 - 컬럼 순서가 어긋나면 조용히 틀린 예측이 나온다
-    return pd.DataFrame([row])[FEATURES_B]
+        "playtime_at_review_min": int(float(hours) * 60),
+        "num_games_owned": int(owned),
+        "num_reviews": int(n_reviews),
+        "created_ts": _NOW,
+        "voted_up": bool(voted_up),
+    }, _game_dict(game_row), lang_stats)
 
 
-def gauge(p):
-    """확률을 사람이 읽는 말로."""
-    if p >= .65:
+def predict(model, order, row):
+    """확률 하나만. 근거가 필요하면 explain_one 을 쓴다."""
+    return float(model.predict_proba(to_model_frame(row, order))[0, 1])
+
+
+def predict_many(model, order, review, hours, owned, n_reviews, voted_up,
+                 games_df, lang_stats):
+    """게임 여러 개를 한 번에 채점한다 (추천·계산기 화면).
+
+    한 줄씩 predict 를 부르면 1,500개에 몇 초가 걸린다.
+    표를 한 번에 만들어 넘기면 훨씬 빠르다.
+    """
+    rows = [build_row(review, hours, owned, n_reviews, voted_up, g, lang_stats)
+            for _, g in games_df.iterrows()]
+    X = to_model_frame(pd.concat(rows, ignore_index=True), order)
+    return model.predict_proba(X)[:, 1]
+
+
+def explain(row, top_n=6):
+    """이 예측에 각 변수가 얼마나 기여했는지 (SHAP).
+
+    팀원이 만든 explain_one 을 그대로 쓴다.
+    '기여' 는 확률이 아니라 로그오즈라, 화면에는 기여율(%)을 같이 보여준다.
+    """
+    r = explain_one(row, 상위=top_n)
+    return pd.DataFrame([{"변수": x["한글"], "기여": x["기여"], "기여율": x["기여율"]}
+                         for x in r["이유"]]), r
+
+
+def gauge(p, thr):
+    """확률을 사람이 읽는 말로. 임계값을 기준으로 나눈다."""
+    if p >= thr + .15:
         return "🔴", "떠날 가능성이 높습니다"
-    if p >= .45:
-        return "🟡", "애매합니다"
+    if p >= thr:
+        return "🟡", "떠나는 쪽입니다"
+    if p >= thr - .15:
+        return "🟢", "남는 쪽입니다"
     return "🟢", "계속할 가능성이 높습니다"

@@ -15,10 +15,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from app._shared import get_all, build_row, page
+from app._shared import get_all, predict_many, page
 from app._predict import load_catalog, STEAM_IMG
 
-clf, reg, GAMES, _, _, META, LANG = get_all()
+MODEL, GAMES, _, _, META, LANG = get_all()
 CAT = load_catalog()
 
 page("🎯 나에게 맞는 게임",
@@ -80,11 +80,12 @@ if use_catalog:
 else:
     pool = GAMES.copy()
     pool["학습함"] = 1
-    pool["설명"] = ""
-    if "appid" not in pool.columns and CAT is not None:
-        pool = pool.merge(CAT[["game", "appid", "설명"]].drop_duplicates("game"),
-                          on="game", how="left", suffixes=("", "_c"))
-        pool["설명"] = pool.get("설명_c", "")
+    # 설명은 _predict.load_all() 이 catalog.csv 에서 appid 로 붙여준다.
+    # 예전에는 여기서 무조건 "" 로 덮어쓰고, appid 가 없을 때만 다시 붙였다.
+    # games.csv 에는 appid 가 있어서 그 분기가 한 번도 안 돌았고 설명이 늘 비었다.
+    if "설명" not in pool.columns:
+        pool["설명"] = ""
+    pool["설명"] = pool["설명"].fillna("")
 
 if genres:
     pool = pool[pool.genre_group.isin(genres)]
@@ -101,13 +102,11 @@ if st.button("추천 받기", width="stretch"):
         st.warning("조건에 맞는 게임이 없습니다. 장르나 시기를 넓혀보세요.")
         st.stop()
 
-    with st.spinner("게임을 하나씩 점수 매기는 중…"):
-        X = pd.concat(
-            [build_row(sample, hours, owned, n_rev, voted, g, LANG)
-             for _, g in pool.iterrows()], ignore_index=True)
+    with st.spinner(f"게임 {len(pool):,}개 점수 매기는 중…"):
+        p_churn = predict_many(MODEL, META["_order"], sample, hours, owned,
+                               n_rev, voted, pool, LANG)
         res = pool.reset_index(drop=True).copy()
-        res["완주확률"] = 1 - clf.predict_proba(X)[:, 1]
-        res["예상시간"] = np.expm1(reg.predict(X))
+        res["완주확률"] = 1 - p_churn
 
     def card(r, risk=False):
         appid = r.get("appid")
@@ -128,7 +127,7 @@ if st.button("추천 받기", width="stretch"):
             f'      <span>{int(r.release_year)}</span></div>'
             f'  </div>'
             f'  <div class="pct"><b>{r.완주확률:.0%}</b>'
-            f'    <span>예상 {r.예상시간:.0f}시간</span></div>'
+            f'    <span>끝까지 할 확률</span></div>'
             f'</div>')
 
     st.markdown("##### 🟢 끝까지 할 것 같은 게임")
@@ -142,17 +141,17 @@ if st.button("추천 받기", width="stretch"):
     if use_catalog:
         st.info(f"**처음 보는 게임**은 리뷰를 모으지 않은 게임입니다. "
                 f"장르·출시시기·평가만 보고 예측하므로 정확도가 낮습니다 "
-                f"(AUC {META['분류_AUC']:.3f} → {META['처음보는게임_AUC']:.3f}). "
-                f"🧪 화면에서 그 낙폭을 직접 확인할 수 있습니다.", icon="⚠️")
+                f"(AUC {META.get('성능_랜덤분할', 0.818):.3f} → "
+                f"{META.get('성능_봉인12게임', 0.7209):.3f}). "
+                f"학습에 한 번도 쓰지 않은 12개 게임으로 잰 값입니다.", icon="⚠️")
 
     with st.expander(f"전체 {len(res)}개 표로 보기"):
-        cols = ["game", "genre_group", "grade", "release_year", "완주확률", "예상시간"]
+        cols = ["game", "genre_group", "grade", "release_year", "완주확률"]
         st.dataframe(
             res.sort_values("완주확률", ascending=False)[cols]
             .rename(columns={"game": "게임", "genre_group": "장르",
                              "grade": "평가", "release_year": "출시"})
-            .style.format({"완주확률": "{:.1%}", "예상시간": "{:.1f}시간",
-                           "출시": "{:.0f}"}),
+            .style.format({"완주확률": "{:.1%}", "출시": "{:.0f}"}),
             width="stretch", hide_index=True, height=360)
 
 st.caption("이 예측은 **\"당신 같은 사람이 이 게임에 리뷰를 쓴다면\"** 을 전제로 합니다. "
