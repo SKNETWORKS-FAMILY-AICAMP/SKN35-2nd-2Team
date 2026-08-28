@@ -20,6 +20,13 @@ models/*.pkl
 models/*.pt
 models/*.joblib
 
+# AutoGluon 이 학습 중 만드는 작업 폴더 (수백 MB 까지 커진다)
+AutogluonModels/
+
+# 실행 로그 — 사람이 읽는 용도지 공유할 것이 아니다.
+# 돌릴 때마다 바뀌어서 브랜치를 옮길 때마다 충돌을 일으킨다.
+results/auto_log.txt
+
 # 빈 폴더를 깃에 남기기 위한 표식
 !**/.gitkeep
 
