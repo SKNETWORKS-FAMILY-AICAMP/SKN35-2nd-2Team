@@ -32,7 +32,7 @@ SHAP — "모델이 왜 그렇게 판단했나" 를 숫자로 쪼갠다.
     ※ 화면의 확률은 최종 모델(MLP)이 내고, 근거만 이 모델이 만든다.
 
 실행 (레포 루트에서)
-    uv run python -m src.explain
+    uv run python -m src.explain_dl
 """
 # ★ LightGBM 을 torch 보다 먼저 올려야 한다.
 #   순서가 반대면 둘이 각자 OpenMP 를 들고 와 충돌해서 프로세스가
@@ -40,7 +40,7 @@ SHAP — "모델이 왜 그렇게 판단했나" 를 숫자로 쪼갠다.
 #   함께 쓰므로 여기서 선점한다.
 #   ※ 반대로 AutoGluon(src/auto.py)은 LightGBM 이 먼저 올라가 있으면
 #     멀티프로세싱 단계에서 교착된다. 그래서 config.py 가 아니라
-#     이 파일에서만 선점한다. auto.py 는 explain 을 import 하지 않는다.
+#     이 파일에서만 선점한다. auto.py 는 이 모듈을 import 하지 않는다.
 import lightgbm as _lgb_preload  # noqa: F401
 
 import numpy as np
@@ -124,7 +124,7 @@ def _load():
     if "b" not in _cache:
         import joblib
         if not _MODEL_PATH.exists():
-            raise FileNotFoundError("먼저: uv run python -m src.explain")
+            raise FileNotFoundError("먼저: uv run python -m src.explain_dl")
         _cache["b"] = joblib.load(_MODEL_PATH)
     return _cache["b"]
 
