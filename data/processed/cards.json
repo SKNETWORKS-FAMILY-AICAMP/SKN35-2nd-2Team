@@ -1,0 +1,122 @@
+[
+ {
+  "game": "War Robots",
+  "genre_group": "멀티/경쟁",
+  "grade": "평가나쁨",
+  "review": "this is an alt and it's a fun game until you reach the higher leagues, where the p2w starts to kick in, as well as tankers so might as well be a tanker yourself if you cant handle lower leagues as a f2p and this is all obviously bc of pigsonic",
+  "hours_at_review": 3.2,
+  "is_private": 1,
+  "voted_up": 1,
+  "review_len": 243,
+  "churn": 0,
+  "_p": 0.1988
+ },
+ {
+  "game": "Northgard: Definitive Edition",
+  "genre_group": "멀티/경쟁",
+  "grade": "매우긍정",
+  "review": "This is an incredibly well done and designed RTS.",
+  "hours_at_review": 51.2166666667,
+  "is_private": 1,
+  "voted_up": 1,
+  "review_len": 49,
+  "churn": 0,
+  "_p": 0.5043
+ },
+ {
+  "game": "Beat Saber",
+  "genre_group": "멀티/경쟁",
+  "grade": "압도적긍정",
+  "review": "(Logging this as I just finished the campaign mode and thought that would be the best time to review.)\r\n\r\nThis game is absolutely perfect. Every other time I have played a rhythm game in VR- I always end up wishing I was just playing this.",
+  "hours_at_review": 15.7166666667,
+  "is_private": 0,
+  "voted_up": 1,
+  "review_len": 239,
+  "churn": 1,
+  "_p": 0.5341
+ },
+ {
+  "game": "Hitman: Absolution",
+  "genre_group": "액션/캐주얼",
+  "grade": "매우긍정",
+  "review": "Contract servers do not function. This is game is a waste of money and a waste of time.",
+  "hours_at_review": 1.45,
+  "is_private": 1,
+  "voted_up": 0,
+  "review_len": 87,
+  "churn": 1,
+  "_p": 0.8436
+ },
+ {
+  "game": "Feed and Grow: Fish",
+  "genre_group": "전략/시뮬",
+  "grade": "대체로긍정",
+  "review": "this game sucks i cant start it it shows a white popup and after a cuople seconds goes away",
+  "hours_at_review": 0.35,
+  "is_private": 1,
+  "voted_up": 0,
+  "review_len": 91,
+  "churn": 1,
+  "_p": 0.8648
+ },
+ {
+  "game": "War Robots",
+  "genre_group": "멀티/경쟁",
+  "grade": "평가나쁨",
+  "review": "Just Hackers Everywhere,ios mac & android never a pc hacker so why cross play...",
+  "hours_at_review": 563.0833333333,
+  "is_private": 1,
+  "voted_up": 0,
+  "review_len": 80,
+  "churn": 0,
+  "_p": 0.1493
+ },
+ {
+  "game": "Halls of Torment",
+  "genre_group": "싱글 서사",
+  "grade": "압도적긍정",
+  "review": "dude. it's like i'm really in the halls of torment myself. it's also like i really have carpal tunnel.",
+  "hours_at_review": 3.7333333333,
+  "is_private": 1,
+  "voted_up": 1,
+  "review_len": 102,
+  "churn": 0,
+  "_p": 0.2831
+ },
+ {
+  "game": "Forts",
+  "genre_group": "멀티/경쟁",
+  "grade": "매우긍정",
+  "review": "if you what mods for warfar its the right game to play",
+  "hours_at_review": 10.6,
+  "is_private": 1,
+  "voted_up": 1,
+  "review_len": 54,
+  "churn": 1,
+  "_p": 0.1359
+ },
+ {
+  "game": "Forts",
+  "genre_group": "멀티/경쟁",
+  "grade": "매우긍정",
+  "review": "Everyone I played this game with doesn't want to play it with me anymore-\r\n\r\nmagnabeam howitzer back slap / 10",
+  "hours_at_review": 145.8833333333,
+  "is_private": 0,
+  "voted_up": 1,
+  "review_len": 110,
+  "churn": 0,
+  "_p": 0.2225
+ },
+ {
+  "game": "Pseudoregalia",
+  "genre_group": "싱글 서사",
+  "grade": "압도적긍정",
+  "review": "Crazy good movement controls",
+  "hours_at_review": 4.8166666667,
+  "is_private": 0,
+  "voted_up": 1,
+  "review_len": 28,
+  "churn": 1,
+  "_p": 0.7759
+ }
+]
