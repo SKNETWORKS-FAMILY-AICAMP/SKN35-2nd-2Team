@@ -125,32 +125,34 @@ def fig_text_ladder():
     """
     import matplotlib.pyplot as plt
 
-    items = [
-        ("글만\n(숫자 없이)",            0.7047, C_TEXT),
-        ("숫자 + 글\n고정 임베딩",        0.7770, C_TEXT),
-        ("숫자 + 글\n원문 직접 읽기",     0.8074, C_TEXT),
-        ("숫자만\n(글 안 씀)",           0.8129, C_GROUP),
-    ]
-    names = [i[0] for i in items]; vals = [i[1] for i in items]; cols = [i[2] for i in items]
+    names = ["글만\n(숫자 없이)", "숫자 + 글\n고정 임베딩",
+             "숫자 + 글\n원문 직접 읽기", "숫자만\n(글 안 씀)"]
+    rand  = [0.7047, 0.7770, 0.8074, 0.8129]
+    grp   = [0.6611, 0.7295, 0.7593, 0.7504]
+    x = np.arange(len(names)); w = 0.38
 
-    fig, ax = plt.subplots(figsize=(9, 5))
-    bars = ax.bar(range(len(items)), vals, color=cols, width=.6)
-    for i, v in enumerate(vals):
-        ax.text(i, v + .004, f"{v:.3f}", ha="center", fontsize=11, fontweight="bold")
+    fig, ax = plt.subplots(figsize=(10, 5.4))
+    ax.bar(x - w/2, rand, w, label="랜덤 분할 (아는 게임)", color=C_RANDOM)
+    ax.bar(x + w/2, grp,  w, label="게임 단위 분할 (처음 보는 게임)", color=C_GROUP)
+    for i, (a_, b_) in enumerate(zip(rand, grp)):
+        ax.text(i - w/2, a_ + .004, f"{a_:.3f}", ha="center", fontsize=9)
+        ax.text(i + w/2, b_ + .004, f"{b_:.3f}", ha="center", fontsize=9)
 
-    ax.annotate("", xy=(2, 0.795), xytext=(1, 0.795),
-                arrowprops=dict(arrowstyle="->", color="#16a34a", lw=2))
-    ax.text(1.5, 0.799, "+0.030\n제대로 읽으면 오른다", ha="center", fontsize=9.5,
-            color="#16a34a")
-    ax.annotate("", xy=(3, 0.822), xytext=(2, 0.822),
-                arrowprops=dict(arrowstyle="->", color="#b91c1c", lw=2))
-    ax.text(2.5, 0.826, "그래도 못 넘는다", ha="center", fontsize=9.5, color="#b91c1c")
+    # 고정 임베딩 -> 원문 직접 읽기 : 두 분할에서 같은 폭으로 오른다
+    for off, vals, col in [(-w/2, rand, "#16a34a"), (w/2, grp, "#16a34a")]:
+        ax.annotate("", xy=(2 + off, vals[2] - .004), xytext=(1 + off, vals[1] - .004),
+                    arrowprops=dict(arrowstyle="->", color=col, lw=1.8))
+    ax.text(1.5, 0.845, "제대로 읽으면  랜덤 +0.030 · 게임 +0.030",
+            ha="center", fontsize=10, color="#16a34a", fontweight="bold")
 
     ax.axhline(0.8129, color="#94a3b8", ls="--", lw=1)
-    ax.set_xticks(range(len(items))); ax.set_xticklabels(names, fontsize=9.5)
-    ax.set_ylabel("AUC (랜덤 분할)"); ax.set_ylim(0.68, 0.845)
-    ax.set_title("글을 아무리 잘 읽혀도, 숫자만 쓴 모델을 넘지 못했다",
-                 fontsize=13, pad=14)
+    ax.text(3.42, 0.8145, "숫자만 (랜덤)", fontsize=8, color="#94a3b8", ha="right")
+
+    ax.set_xticks(x); ax.set_xticklabels(names, fontsize=9.5)
+    ax.set_ylabel("AUC"); ax.set_ylim(0.63, 0.865)
+    ax.set_title("글을 아무리 잘 읽혀도 숫자를 넘지 못했다  —  단, 처음 보는 게임에서는 도움이 된다",
+                 fontsize=12.5, pad=14)
+    ax.legend(loc="lower right", fontsize=9, framealpha=.95)
     ax.grid(axis="y", alpha=.25); ax.set_axisbelow(True)
     for s in ("top", "right"): ax.spines[s].set_visible(False)
     FIGURES.mkdir(parents=True, exist_ok=True)
