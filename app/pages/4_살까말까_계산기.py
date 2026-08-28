@@ -43,7 +43,8 @@ with st.expander("내 게임 성향 (한 번만 설정하면 됩니다)", expand
     play_k = c1.radio("한 게임을 보통 얼마나 하세요?", list(PLAY))
     write_k = c2.radio("스팀에 리뷰를 자주 쓰세요?", list(WRITE))
     c3, c4 = st.columns(2)
-    owned = c3.slider("스팀에 게임이 몇 개쯤 있나요?", 0, 2000, 150, step=10)
+    owned = c3.slider("스팀에 게임이 몇 개쯤 있나요?", 0, 500, 120, step=10,
+                      help="스팀 유저 중앙값이 114개입니다")
     generous = c4.radio("평가는 후한 편인가요?",
                         ["👍 웬만하면 추천해요", "👎 깐깐한 편이에요"], horizontal=True)
 
@@ -53,6 +54,16 @@ voted = generous.startswith("👍")
 # ── 게임 고르기 ─────────────────────────────────────────────────
 st.markdown("##### 사려는 게임을 고르세요")
 paid = CAT[CAT.현재가 > 0].sort_values("리뷰수", ascending=False)
+
+# 이미 산 게임은 목록에서 뺀다 — 또 살 일이 없다
+have = st.multiselect("이미 갖고 있는 게임 (목록에서 제외됩니다)",
+                      paid.game.tolist(), placeholder="게임 이름을 입력해 고르세요",
+                      help=f"스팀 전체가 아니라 **리뷰가 많은 상위 {len(CAT)}개** 중 "
+                           f"유료 게임만 담고 있습니다")
+st.caption(f"※ 스팀 전체 게임이 아니라 **누적 리뷰가 많은 순으로 {len(CAT)}개**를 다루며, "
+           f"그중 **유료 게임 {len(paid)}개**가 목록에 있습니다 (무료는 계산할 게 없어 제외).")
+if have:
+    paid = paid[~paid.game.isin(have)]
 default = [g for g in ["Assassin's Creed Mirage", "Planet Coaster 2", "Tales of ARISE"]
            if g in set(paid.game)][:3]
 picks = st.multiselect("게임 (여러 개 고를 수 있습니다)", paid.game.tolist(),

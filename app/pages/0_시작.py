@@ -16,35 +16,6 @@ st.markdown(
     "게임 리뷰를 입력하여 리뷰를 작성한 유저의 이탈 가능성을 예측해보세요</p>",
     unsafe_allow_html=True)
 
-# 지표 4개 — st.metric 기본 스타일이 밋밋해서 직접 그린다
-churn = float(META["이탈률"])
-auc = float(META["분류_AUC"])
-st.markdown(f"""
-<div class="kpis">
-  <div class="kpi">
-    <div class="top"><div class="ico">📊</div><div class="lab">학습 데이터</div></div>
-    <div class="val">{META['행수']:,}<u>행</u></div>
-    <div class="sub">스팀 리뷰 · 30개 언어</div>
-  </div>
-  <div class="kpi">
-    <div class="top"><div class="ico">🎮</div><div class="lab">분석한 게임</div></div>
-    <div class="val">{len(GAMES)}<u>개</u></div>
-    <div class="sub">2001~2024년 · 5개 장르</div>
-  </div>
-  <div class="kpi">
-    <div class="top"><div class="ico">🚪</div><div class="lab">이탈률</div></div>
-    <div class="val">{churn:.1%}</div>
-    <div class="gauge"><i style="width:{churn*100:.0f}%"></i></div>
-    <div class="sub">리뷰 후 1시간도 안 한 비율</div>
-  </div>
-  <div class="kpi accent">
-    <div class="top"><div class="ico">🎯</div><div class="lab">모델 성능</div></div>
-    <div class="val">{auc:.3f}<u>AUC</u></div>
-    <div class="sub">동전 던지기는 0.500</div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
 st.write("")
 left, center, right = st.columns([1, 2, 1])
 with center:

@@ -22,36 +22,67 @@ ss = st.session_state
 for k, v in [("i", 0), ("me", 0), ("ai", 0), ("log", []), ("shown", False)]:
     ss.setdefault(k, v)
 
-done = ss.i if not ss.shown else ss.i + 1
+# 진행 상태를 세는 기준은 "답한 문제 수" 하나뿐이다.
+# ss.i(현재 위치)와 섞어 쓰면 정답 공개 중에 하나씩 어긋난다.
+answered = len(ss.log)
 
 
 def score_board():
+    """점수판.
+
+    분모(/12)를 반드시 같이 보여준다. 숫자만 나란히 두면
+    두 점수를 더해서 "총 몇 문제 풀었나" 로 읽는 사람이 생긴다.
+    각자 12문제 중 몇 개를 맞혔는지이지, 합치는 숫자가 아니다.
+    """
     st.markdown(
         f'''<div class="score-board">
-          <div class="side me"><div class="who">당신</div><div class="pts">{ss.me}</div></div>
+          <div class="side me"><div class="who">당신이 맞힌 개수</div>
+            <div class="pts">{ss.me}<u>/ {N}</u></div></div>
           <div class="vs">VS</div>
-          <div class="side ai"><div class="who">모델</div><div class="pts">{ss.ai}</div></div>
+          <div class="side ai"><div class="who">모델이 맞힌 개수</div>
+            <div class="pts">{ss.ai}<u>/ {N}</u></div></div>
         </div>''', unsafe_allow_html=True)
 
 
-def dots():
-    marks = "".join(
-        f'<i class="{"done" if k < ss.i else "now" if k == ss.i else ""}"></i>'
-        for k in range(N))
-    st.markdown(f'<div class="dots">{marks}</div>', unsafe_allow_html=True)
+def grid(answered):
+    """문제별 채점표 — 같은 문제를 각자 풀었다는 걸 눈으로 보여준다.
+
+    점수 두 개를 나란히 두면 자꾸 더해서 읽힌다 (5 + 9 = 14).
+    문제를 가로축에 두고 사람/모델 두 줄을 겹쳐 놓으면
+    "같은 12문제"라는 게 한눈에 보인다.
+    """
+    def cell(k, who):
+        if k < answered:
+            hit = ss.log[k][who] == ss.log[k]["정답"]
+            return f'<span class="mk {"o" if hit else "x"}">{"O" if hit else "X"}</span>'
+        if k == answered and not ss.shown:
+            return '<span class="mk q">?</span>'
+        return '<span class="mk n">·</span>'
+
+    head = "".join(f'<th class="qn">{k + 1}</th>' for k in range(N))
+    rows = ""
+    for who, label, cls in [("당신", "당신", "me"), ("모델", "모델", "ai")]:
+        tds = "".join(
+            f'<td class="{"cur" if k == answered and not ss.shown else ""}">{cell(k, who)}</td>'
+            for k in range(N))
+        rows += f'<tr class="{cls}"><th class="hdr">{label}</th>{tds}</tr>'
+    st.markdown(
+        f'<div class="grid"><table><tr><th class="hdr">문제</th>{head}</tr>'
+        f'{rows}</table></div>', unsafe_allow_html=True)
 
 
 # ── 다 풀었을 때 ────────────────────────────────────────────────
 if ss.i >= N:
     score_board()
     if ss.ai > ss.me:
-        st.error(f"### 모델이 이겼습니다  {ss.ai} : {ss.me}")
+        st.error(f"### 모델이 이겼습니다 — 모델 {ss.ai}개 · 당신 {ss.me}개 (각 {N}문제 중)")
     elif ss.ai < ss.me:
-        st.success(f"### 사람이 이겼습니다!  {ss.me} : {ss.ai}")
+        st.success(f"### 사람이 이겼습니다! — 당신 {ss.me}개 · 모델 {ss.ai}개 (각 {N}문제 중)")
     else:
-        st.info(f"### 무승부  {ss.me} : {ss.ai}")
+        st.info(f"### 무승부 — 각 {ss.me}개 (각 {N}문제 중)")
 
-    st.caption(f"동전 던지기로 찍으면 평균 {N / 2:.0f}점입니다.")
+    st.caption(f"같은 {N}문제를 각자 푼 결과입니다. 두 점수를 더하는 것이 아닙니다. "
+               f"동전 던지기로 찍으면 평균 {N / 2:.0f}개를 맞힙니다.")
     st.dataframe(pd.DataFrame(ss.log), width="stretch", hide_index=True)
 
     c = st.columns([2, 1, 2])[1]
@@ -63,9 +94,11 @@ if ss.i >= N:
 
 # ── 문제 ────────────────────────────────────────────────────────
 card = CARDS[ss.i]
+answered = len(ss.log)
 score_board()
-dots()
-st.caption(f"문제 {ss.i + 1} / {N}")
+grid(answered)
+st.caption(f"{N}문제 중 {answered}개 답함"
+           + ("  ·  결과를 확인하고 다음으로 넘어가세요" if ss.shown else ""))
 
 vote = ('<span class="pill up">👍 추천</span>' if card["voted_up"]
         else '<span class="pill down">👎 비추천</span>')

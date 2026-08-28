@@ -33,9 +33,11 @@ OUT = DATA_PROC / "catalog.csv"
 API_EN = "https://store.steampowered.com/api/appdetails?appids={}"
 API_KR = "https://store.steampowered.com/api/appdetails?appids={}&l=korean"
 UA = {"User-Agent": "Mozilla/5.0"}
-# 스팀은 5분에 200요청쯤에서 막는다. 게임당 2번 부르므로 게임당 3초로 잡는다.
-# 처음에 0.7 로 돌렸다가 200개 넘어가면서 전부 실패했다.
-SLEEP = 1.5
+# 스팀은 5분에 200요청쯤(분당 40회)에서 막는다. 게임당 2번 부르므로 여유를 둔다.
+# 0.7 로 돌렸다가 200개 넘어가면서 전부 실패한 적이 있다.
+SLEEP = 2.0
+MIN_REVIEWS = 5000     # 이보다 리뷰가 적은 게임은 추천 목록에 넣지 않는다.
+                       # 아무도 모르는 게임이 추천에 뜨면 오히려 신뢰가 떨어진다.
 NOW = pd.Timestamp("2026-08-25")
 
 
@@ -101,6 +103,27 @@ def fetch(appid):
     return en
 
 
+def trim(total=1500):
+    """카탈로그를 total 개로 줄인다.
+
+    우리가 리뷰를 모은 60개는 무조건 남긴다 — 모델이 실제로 학습한 게임이라
+    예측이 가장 정확하고, 리뷰 수가 적어도 화면의 기준점이 되기 때문이다.
+    (그냥 리뷰순으로 자르면 TheoTown 등 4개가 잘려 나간다)
+
+    나머지는 리뷰 많은 순으로 채운다.
+    """
+    cat = pd.read_csv(OUT, encoding=ENC_READ)
+    ours = cat[cat.학습함 == 1]
+    rest = (cat[cat.학습함 == 0].sort_values("리뷰수", ascending=False)
+            .head(max(0, total - len(ours))))
+    out = pd.concat([ours, rest], ignore_index=True)
+    out.to_csv(OUT, index=False, encoding=ENC_WRITE)
+    print(f"{len(cat)}개 -> {len(out)}개 "
+          f"(우리 {len(ours)}개 + 처음 보는 게임 {len(rest)}개)")
+    print(f"  잘라낸 기준 — 처음 보는 게임 중 리뷰 {int(rest.리뷰수.min()):,}건 이상")
+    return out
+
+
 def finalize():
     """카탈로그를 games.csv 기준으로 정리한다.
 
@@ -141,9 +164,8 @@ def finalize():
 def main(n_target=400, append=False):
     pool = pd.read_csv(POOL, encoding=ENC_READ)
     pool["total"] = pool.positive + pool.negative
-    # 리뷰가 너무 적은 게임은 평가 등급을 못 믿는다
-    pool = pool[pool.total >= 500].copy()
-    print(f"후보 {len(pool):,}개 (누적 리뷰 500건 이상)")
+    pool = pool[pool.total >= MIN_REVIEWS].copy()
+    print(f"후보 {len(pool):,}개 (누적 리뷰 {MIN_REVIEWS:,}건 이상)")
 
     # 이미 리뷰를 모은 60개는 '학습함' 으로 표시해 구분한다
     ours = set(pd.read_csv(DATA_RAW / "selected_60.csv", encoding=ENC_READ).appid)
@@ -153,11 +175,14 @@ def main(n_target=400, append=False):
         have = set(pd.read_csv(OUT, encoding=ENC_READ).appid)
         print(f"이미 받아둔 {len(have)}개는 건너뜁니다")
 
-    rng = np.random.RandomState(SEED + len(have))
+    # 무작위가 아니라 **리뷰 많은 순**으로 가져온다.
+    # 추천 화면에서 사용자가 검색할 게임은 결국 아는 게임이다.
+    # 무작위 표본이면 유명한 게임이 절반쯤 빠져서 검색이 안 된다.
     need = ours - have
-    cand = pool[~pool.appid.isin(ours | have)].appid.values
-    pick = list(need) + [a for a in rng.permutation(cand)][:max(0, n_target - len(need))]
-    print(f"조회 대상 {len(pick)}개")
+    cand = (pool[~pool.appid.isin(ours | have)]
+            .sort_values("total", ascending=False).appid.values)
+    pick = list(need) + list(cand[:max(0, n_target - len(need))])
+    print(f"조회 대상 {len(pick)}개 (리뷰 많은 순)")
     print(f"예상 소요 {len(pick) * SLEEP / 60:.0f}분\n")
 
     rows, t0 = [], time.time()
@@ -217,6 +242,8 @@ if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else "400"
     if arg == "finalize":
         finalize()
+    elif arg == "trim":
+        trim(int(sys.argv[2]) if len(sys.argv) > 2 else 1500)
     else:
         main(int(arg), append="--append" in sys.argv)
         finalize()

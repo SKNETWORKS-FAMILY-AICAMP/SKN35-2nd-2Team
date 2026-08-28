@@ -117,6 +117,48 @@ def fig_text_effect():
     fig.tight_layout(); fig.savefig(FIGURES / "03_글의효과.png"); plt.close(fig)
 
 
+# ── 4. 글을 읽는 방식별 성능 ────────────────────────────────────
+def fig_text_ladder():
+    """
+    글을 다루는 방식을 점점 좋게 하면서 성능이 어떻게 변하는지.
+    "글이 도움이 되는가" 라는 질문의 최종 답이다.
+    """
+    import matplotlib.pyplot as plt
+
+    names = ["글만\n(숫자 없이)", "숫자 + 글\n고정 임베딩",
+             "숫자 + 글\n원문 직접 읽기", "숫자만\n(글 안 씀)"]
+    rand  = [0.7047, 0.7770, 0.8074, 0.8129]
+    grp   = [0.6611, 0.7295, 0.7593, 0.7504]
+    x = np.arange(len(names)); w = 0.38
+
+    fig, ax = plt.subplots(figsize=(10, 5.4))
+    ax.bar(x - w/2, rand, w, label="랜덤 분할 (아는 게임)", color=C_RANDOM)
+    ax.bar(x + w/2, grp,  w, label="게임 단위 분할 (처음 보는 게임)", color=C_GROUP)
+    for i, (a_, b_) in enumerate(zip(rand, grp)):
+        ax.text(i - w/2, a_ + .004, f"{a_:.3f}", ha="center", fontsize=9)
+        ax.text(i + w/2, b_ + .004, f"{b_:.3f}", ha="center", fontsize=9)
+
+    # 고정 임베딩 -> 원문 직접 읽기 : 두 분할에서 같은 폭으로 오른다
+    for off, vals, col in [(-w/2, rand, "#16a34a"), (w/2, grp, "#16a34a")]:
+        ax.annotate("", xy=(2 + off, vals[2] - .004), xytext=(1 + off, vals[1] - .004),
+                    arrowprops=dict(arrowstyle="->", color=col, lw=1.8))
+    ax.text(1.5, 0.845, "제대로 읽으면  랜덤 +0.030 · 게임 +0.030",
+            ha="center", fontsize=10, color="#16a34a", fontweight="bold")
+
+    ax.axhline(0.8129, color="#94a3b8", ls="--", lw=1)
+    ax.text(3.42, 0.8145, "숫자만 (랜덤)", fontsize=8, color="#94a3b8", ha="right")
+
+    ax.set_xticks(x); ax.set_xticklabels(names, fontsize=9.5)
+    ax.set_ylabel("AUC"); ax.set_ylim(0.63, 0.865)
+    ax.set_title("글을 아무리 잘 읽혀도 숫자를 넘지 못했다  —  단, 처음 보는 게임에서는 도움이 된다",
+                 fontsize=12.5, pad=14)
+    ax.legend(loc="lower right", fontsize=9, framealpha=.95)
+    ax.grid(axis="y", alpha=.25); ax.set_axisbelow(True)
+    for s in ("top", "right"): ax.spines[s].set_visible(False)
+    FIGURES.mkdir(parents=True, exist_ok=True)
+    fig.tight_layout(); fig.savefig(FIGURES / "05_글을읽는방식.png"); plt.close(fig)
+
+
 if __name__ == "__main__":
     import pandas as _pd
     from sklearn.metrics import roc_auc_score
@@ -144,4 +186,5 @@ if __name__ == "__main__":
     fig_roc(curves); print("  02_ROC.png")
 
     fig_text_effect(); print("  03_글의효과.png")
+    fig_text_ladder(); print("  05_글을읽는방식.png")
     print(f"\n저장 위치: {FIGURES}")

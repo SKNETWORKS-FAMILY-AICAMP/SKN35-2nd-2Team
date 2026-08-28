@@ -61,18 +61,48 @@ def nav(current=None):
         col.page_link(path, label=label, icon=icon, width="stretch")
 
 
+def kpi_bar():
+    """페이지 상단 지표 — 시작 화면 카드와 같은 스타일.
+
+    어느 화면을 보고 있든 "무슨 데이터로 만든 건지" 가 눈에 있어야
+    발표에서 설명을 반복하지 않아도 된다.
+    시작 화면에는 넣지 않는다 — 결과를 미리 보여주는 셈이 되기 때문이다.
+    """
+    _, _, games, _, _, meta, _ = get_all()
+    churn, auc = float(meta["이탈률"]), float(meta["분류_AUC"])
+    name = meta["모델"].split("(")[0].strip()
+    st.markdown(f"""
+<div class="kpis compact">
+  <div class="kpi">
+    <div class="top"><div class="ico">📊</div><div class="lab">학습 데이터</div></div>
+    <div class="val">{meta['행수']:,}<u>행</u></div>
+    <div class="sub">스팀 리뷰 · 30개 언어</div>
+  </div>
+  <div class="kpi">
+    <div class="top"><div class="ico">🎮</div><div class="lab">분석한 게임</div></div>
+    <div class="val">{len(games)}<u>개</u></div>
+    <div class="sub">2001~2024년 · 5개 장르</div>
+  </div>
+  <div class="kpi">
+    <div class="top"><div class="ico">🚪</div><div class="lab">이탈률</div></div>
+    <div class="val">{churn:.1%}</div>
+    <div class="gauge"><i style="width:{churn*100:.0f}%"></i></div>
+    <div class="sub">리뷰 후 1시간도 안 한 비율</div>
+  </div>
+  <div class="kpi accent">
+    <div class="top"><div class="ico">🎯</div><div class="lab">모델 성능</div></div>
+    <div class="val">{auc:.3f}<u>AUC</u></div>
+    <div class="sub">⚠️ 임시 · {name}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+
 def page(title, caption=""):
-    """모든 페이지가 첫 줄에서 부른다 — 테마 + 제목 + 임시모델 표시."""
+    """모든 페이지가 첫 줄에서 부른다 — 테마 + 미니지표 + 제목."""
     apply_theme()
-    *_, meta, _ = get_all()
+    kpi_bar()
     st.markdown(f"### {title}")
     if caption:
         st.caption(caption)
-    # meta["모델"] 에 이미 "(임시 — ...)" 가 붙어 있어 괄호 부분만 떼고 쓴다
-    name = meta["모델"].split("(")[0].strip()
-    st.markdown(
-        f'<span class="temp-badge">임시 모델</span> '
-        f'<span style="color:{STEAM_TEXT_MUTED};font-size:12px;">'
-        f'  {name} · B의 모델로 교체 예정</span>',
-        unsafe_allow_html=True)
     st.write("")

@@ -21,8 +21,14 @@ from sklearn.model_selection import GroupKFold, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from src.config import (RAW_CSV, DATA_PROC, MODELS, MODEL_META,
-                        GAMES_CSV, CARDS_JSON, UNSEEN_CSV, ENC_READ, ENC_WRITE)
+from src.config import RAW_CSV, DATA_PROC, MODELS, ENC_READ, ENC_WRITE
+
+# 프로토타입 전용 파일들. 팀 공유 config.py 를 늘리지 않는다 —
+# 임시 모델과 함께 사라질 것이라서. 폴더는 config 에서 받으므로 하드코딩은 없다.
+MODEL_META = MODELS / "meta.json"
+GAMES_CSV = DATA_PROC / "games.csv"
+CARDS_JSON = DATA_PROC / "cards.json"
+UNSEEN_CSV = DATA_PROC / "unseen.csv"
 from src.preprocess import FEATURES_B, TARGET, assert_no_leak  # noqa: E402
 
 MODELS.mkdir(parents=True, exist_ok=True)
@@ -121,15 +127,20 @@ print(f"  게임별 결과 {len(pg)}개 저장 — {UNSEEN_GAMES.name}")
 print(f"  평균 {unseen.auc.mean():.3f} ± {unseen.auc.std():.3f}")
 
 # ── 4. 사람 vs 모델 카드 (화면 2용) ─────────────────────────────
-print("\n[4] 사람 vs 모델 카드 12장")
+print(f"\n[4] 사람 vs 모델 카드 {N_CARDS}장")
 d["_p"] = clf.predict_proba(X)[:, 1]
 pool = d[(d.review.fillna("").str.len().between(20, 400)) &
          (d.language == "english")].copy()
-# 난이도를 조작하지 않는다 — 정답 비율만 6:6으로 맞춘 무작위 표본.
+# 난이도를 조작하지 않는다 — 정답 비율만 5:5로 맞춘 무작위 표본.
 # 일부러 '모델이 틀리는 카드'를 넣으면 모델을 나쁘게 보이게 조작하는 셈이다.
+#
+# 왜 10장인가 — 통계적 근거는 없다. 10장으로는 우연과 실력을 구별할 수 없다
+# (10문제에서 8개 이상 맞혀야 유의미하다). 이 화면의 목적은 측정이 아니라
+# "직접 해보니 어렵더라"를 체감시키는 것이고, 발표에서 다 풀 수 있는 길이여야 한다.
+N_CARDS = 10
 cards = pd.concat([
-    pool[pool[TARGET] == 1].sample(6, random_state=7),
-    pool[pool[TARGET] == 0].sample(6, random_state=7),
+    pool[pool[TARGET] == 1].sample(N_CARDS // 2, random_state=7),
+    pool[pool[TARGET] == 0].sample(N_CARDS // 2, random_state=7),
 ]).sample(frac=1, random_state=7)
 cards_out = cards[["game", "genre_group", "grade", "review", "hours_at_review",
                    "is_private", "voted_up", "review_len", TARGET, "_p"]]
@@ -138,6 +149,7 @@ print(f"  저장 {len(cards_out)}장")
 
 # ── 5. 게임 목록 (화면 3용) ─────────────────────────────────────
 games = d.groupby("game").agg(
+    appid=("appid", "first"),          # 화면이 스팀 표지 주소를 만들 때 쓴다
     genre_group=("genre_group", "first"), era=("era", "first"),
     grade=("grade", "first"), release_year=("release_year", "first"),
     game_age_days=("game_age_days", "median"),

@@ -1,10 +1,26 @@
+# 줄바꿈 통일 — 맥/윈도우가 섞인 팀이라 반드시 필요하다.
+# 이게 없으면 팀원이 한 글자만 고쳐도 "파일 전체가 바뀜" 으로 뜬다.
+#
+#   text=auto  깃이 텍스트인지 알아서 판단
+#   eol=lf     깃 저장소 안에는 항상 LF 로 넣는다 (각자 컴퓨터는 알아서)
 * text=auto eol=lf
 
-*.png  binary
-*.jpg  binary
-*.pdf  binary
-*.pkl  binary
-*.npy  binary
-*.pptx binary
-*.xlsx binary
-*.gz   binary
+# 바이너리 — 줄바꿈을 건드리면 파일이 깨진다.
+#   -text 로 위의 규칙을 확실히 꺼둔다 (binary 매크로보다 명시적)
+*.png   -text
+*.jpg   -text
+*.jpeg  -text
+*.gif   -text
+*.pdf   -text
+*.pkl   -text
+*.joblib -text
+*.pt    -text
+*.npy   -text
+*.pptx  -text
+*.xlsx  -text
+*.docx  -text
+*.gz    -text
+*.zip   -text
+
+# 주피터 노트북 — 충돌이 나면 사람이 못 읽으므로 병합을 시도하지 않는다
+*.ipynb -merge

@@ -45,9 +45,20 @@ play_k = c3.radio("한 게임을 보통 얼마나 하세요?", list(PLAY))
 write_k = c4.radio("스팀에 리뷰를 자주 쓰세요?", list(WRITE))
 
 c5, c6 = st.columns(2)
-owned = c5.slider("스팀에 게임이 몇 개쯤 있나요?", 0, 2000, 150, step=10)
+owned = c5.slider("스팀에 게임이 몇 개쯤 있나요?", 0, 500, 120, step=10,
+                      help="스팀 유저 중앙값이 114개입니다")
 generous = c6.radio("평가는 후한 편인가요?",
                     ["👍 웬만하면 추천해요", "👎 깐깐한 편이에요"], horizontal=True)
+
+# 이미 산 게임은 추천에서 뺀다 — 갖고 있는 걸 추천하면 쓸모가 없다
+n_cat = len(CAT) if CAT is not None else len(GAMES)
+have = st.multiselect(
+    "이미 갖고 있는 게임 (추천에서 제외됩니다)",
+    (CAT.game.tolist() if CAT is not None else GAMES.game.tolist()),
+    placeholder="게임 이름을 입력해 고르세요",
+    help=f"스팀 전체가 아니라 **리뷰가 많은 상위 {n_cat}개**만 담고 있습니다")
+st.caption(f"※ 스팀 전체 게임이 아니라 **누적 리뷰가 많은 순으로 {n_cat}개**만 다룹니다. "
+           f"목록에 없는 게임은 아직 수집하지 않은 게임입니다.")
 
 scope = "우리가 리뷰를 모은 60개"
 if CAT is not None and (~CAT.학습함.astype(bool)).any():
@@ -79,8 +90,11 @@ if genres:
     pool = pool[pool.genre_group.isin(genres)]
 if ERA[era_k]:
     pool = pool[pool.era.isin(ERA[era_k])]
+if have:
+    pool = pool[~pool.game.isin(have)]
 
-st.caption(f"대상 게임 **{len(pool)}개**")
+st.caption(f"대상 게임 **{len(pool)}개**"
+           + (f" · 보유 {len(have)}개 제외" if have else ""))
 
 if st.button("추천 받기", width="stretch"):
     if pool.empty:
