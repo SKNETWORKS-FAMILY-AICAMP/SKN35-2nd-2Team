@@ -91,7 +91,11 @@ def _text_features(text: str) -> dict:
         "has_text": int(n > 0),
         "excl_ratio": t.count("!") / n if n else 0.0,
         "caps_ratio": (sum(c.isupper() for c in letters) / len(letters)) if letters else 0.0,
-        # 같은 글자 4번 이상 반복 — "ㅋㅋㅋㅋ", "!!!!", "wwww"
+        # 같은 글자 4번 이상 반복 — 감정이 격해진 흔적
+        #   영어 데이터에서 실제로 잡히는 것:
+        #     "Yesssss!!!!"  "joooooon"  "...."
+        #     "♥♥♥♥" "****"  <- 스팀이 욕설을 자동 검열한 자국까지 걸린다
+        #   영어 6.7만 건 중 6.5%(4,346건). 이 중 이탈률 44.9% vs 나머지 39.9%
         "has_repeat": int(bool(re.search(r"(.)\1{3,}", t))),
     }
 
