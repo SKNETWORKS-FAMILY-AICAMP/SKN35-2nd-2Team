@@ -66,7 +66,7 @@ LABEL = {
     "received_for_free": "무료로 받음", "early_access": "얼리액세스",
     "steam_deck": "스팀덱으로 플레이", "is_private": "프로필 비공개",
     "is_spike": "리뷰가 몰린 날", "has_text": "글이 있음",
-    "has_repeat": "반복 문자 (ㅋㅋㅋ, !!!)", "language": "언어",
+    "has_repeat": "글자 반복 (!!!!, sooooo)", "language": "언어",
     "genre_group": "장르", "era": "출시 시기", "grade": "게임 평가 등급",
     "release_year": "출시 연도",
 }
