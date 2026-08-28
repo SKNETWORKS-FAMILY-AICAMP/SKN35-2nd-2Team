@@ -113,14 +113,14 @@ p, span, label, .stMarkdown { color: #c7d5e0; }
 .stAlert { background-color: rgba(42, 71, 94, 0.6) !important; }
 
 /* 입력 폼 컨테이너 */
-/*
+
 div[data-testid="stForm"] {
-    background: rgba(23, 32, 44, 0.7);
+    /* background: rgba(23, 32, 44, 0.7);
     border: 1px solid var(--steam-navy-light);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 12px; */
+    padding: 0px;
 }
-*/
+
 
 /* 리뷰 텍스트 입력창 */
 textarea, div[data-baseweb="textarea"] textarea {
@@ -982,3 +982,8 @@ div[data-testid="stMultiSelect"] div[role="group"] [class*="placeholder"] {
 .grid table { table-layout: fixed; }
 .grid th.hdr { width: 76px; min-width: 76px; padding-right: 10px; }
 .grid td, .grid th.qn { width: auto; }
+
+/* custom css 추가 */
+/* div[data-testid="stElementContainer"] {
+    padding: 16.5px;
+} */
