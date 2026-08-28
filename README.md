@@ -66,7 +66,7 @@ SKN35-2nd-2Team/
 │   ├── embed.py              #   ★ 리뷰 글 → 숫자벡터. 오래 걸리므로 한 번만
 │   │                         #     결과를 data/embeddings/ 에 .npy 로 저장
 │   ├── train_dl.py           #   딥러닝 — (1) MLP  (2) 임베딩+MLP
-│   ├── explain.py            #   SHAP (딥러닝 담당) — 화면 1의 "왜 그렇게 판단했나"
+│   ├── explain_dl.py         #   SHAP (딥러닝 담당) — 화면 1의 "왜 그렇게 판단했나"
 │   ├── explain_ml.py         #   SHAP (머신러닝 담당)
 │   │                         #     ※ 같은 파일을 둘이 고치면 머지에서 덮인다
 │   ├── predict.py            #   저장된 모델로 리뷰 1건 예측 ← app/ 이 불러 씀
@@ -128,7 +128,7 @@ SKN35-2nd-2Team/
 | 담당 | 폴더 | 산출물 |
 |---|---|---|
 | 수집·전처리 | `data/` · `src/preprocess.py` | 01_전처리결과서 |
-| **머신러닝·딥러닝** | `src/evaluate.py` `train_ml.py` `embed.py` `train_dl.py` `explain.py` · `models/` · `results/` | **02_학습결과서 + 학습된 모델** |
+| **머신러닝·딥러닝** | `src/evaluate.py` `train_ml.py` `embed.py` `train_dl.py` `explain_dl.py` · `models/` · `results/` | **02_학습결과서 + 학습된 모델** |
 | Streamlit | `app/` · `src/predict.py` | 배포 주소 |
 | DB | `db/` · `src/db.py` | 스키마 |
 
