@@ -16,6 +16,7 @@ dependencies = [
     "ipykernel",
     "streamlit>=1.62.0",
     "plotly>=7.0.0",
+    "imbalanced-learn>=0.14.2",
     "autogluon-tabular>=1.6.1",
     "autogluon-multimodal>=1.6.1",
 ]
