@@ -3,8 +3,8 @@
 SHAP — 머신러닝 모델이 왜 그렇게 판단했는지 캔다.
 
 ★ 파일 이름이 explain_ml 인 이유
-  딥러닝 담당(C)의 src/explain.py 와 목적이 같고 대상 모델이 다르다.
-    src/explain.py     최종 MLP 를 설명한다. SHAP 은 LightGBM 대리 모델로 근사.
+  딥러닝 담당(C)의 src/explain_dl.py 와 목적이 같고 대상 모델이 다르다.
+    src/explain_dl.py  최종 MLP 를 설명한다. SHAP 은 LightGBM 대리 모델로 근사.
                        영어 67,112행 · B셋 + 임베딩 PCA64
     src/explain_ml.py  배포용 LightGBM 자체를 설명한다 (근사 아님).
                        전체 139,658행 · 30개 언어 · B셋

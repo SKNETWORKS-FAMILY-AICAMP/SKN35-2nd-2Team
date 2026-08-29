@@ -65,7 +65,9 @@ SKN35-2nd-2Team/
 │   ├── train_ml.py           #   머신러닝 — 로지스틱 · RF · XGBoost · LightGBM
 │   ├── embed.py              #   ★ 리뷰 글 → 숫자벡터. 오래 걸리므로 한 번만
 │   │                         #     결과를 data/embeddings/ 에 .npy 로 저장
-│   ├── train_dl.py           #   딥러닝 — (1) MLP  (2) 임베딩+MLP
+│   ├── train_dl.py           #   딥러닝 — (1) MLP 통제군 (숫자만)
+│   │                         #            (2) 임베딩+MLP (숫자+글)
+│   │                         #     (1)은 '글의 효과'를 분리하려는 대조군이다
 │   ├── explain_dl.py         #   SHAP (딥러닝 담당) — 화면 1의 "왜 그렇게 판단했나"
 │   ├── explain_ml.py         #   SHAP (머신러닝 담당)
 │   │                         #     ※ 같은 파일을 둘이 고치면 머지에서 덮인다
