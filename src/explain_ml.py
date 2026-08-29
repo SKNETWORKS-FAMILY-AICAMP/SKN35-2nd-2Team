@@ -51,7 +51,8 @@ import pandas as pd
 from matplotlib import font_manager
 from sklearn.metrics import precision_recall_curve, roc_auc_score
 
-from src.config import DATA_PROC, FIGURES, MODELS, SEED, load_json, save_json
+from src.config import (DATA_PROC, FIGURES, MODELS, RESULTS_CSV, SEED,
+                        load_json, save_json)
 from src.evaluate import features, make_splits
 from src.train_ml import load_all, 변수묶음들
 
@@ -113,6 +114,41 @@ BEST_JSON = MODELS / "ml_best_params.json"
 #   ml_best_params.json 은 고치지 않는다 — 그건 "튜닝이 무엇을 골랐나" 의 기록이다.
 #   배포에서 무엇을 왜 바꿨는지는 ml_meta.json 에 남긴다.
 배포_설정_덮어쓰기 = {"class_weight": None}
+
+
+def _봉인기록_잇기(설정):
+    """
+    앞서 잰 봉인 성적을 이어 받는다.
+
+    ★ 왜 필요한가 — 이 파일을 다시 돌리면 meta 를 통째로 새로 쓴다.
+      그때 봉인 성적을 빈칸으로 두면, 다시 재려고 봉인을 또 열어야 한다.
+      봉인은 열 때마다 값이 닳는 자원이라 그러면 안 된다.
+      (실제로 한 번 날렸다. results.csv 에 남아 있어 복구했다)
+
+      설정이 그대로일 때만 잇는다. 설정이 바뀌면 옛 성적은 다른 모델의 것이므로
+      빈칸으로 두고 새로 재야 한다.
+    """
+    import pandas as pd
+    옛 = load_json(META_JSON) if META_JSON.exists() else {}
+    같은설정 = 옛.get("설정") == 설정
+    값 = 옛.get("성능_봉인12게임") if 같은설정 else None
+
+    if 값 is None and 같은설정:                 # meta 가 비었으면 results.csv 에서 되찾는다
+        try:
+            r = pd.read_csv(RESULTS_CSV, encoding="utf-8")
+            행 = r[r.모델명 == "LightGBM(배포)"]
+            if len(행):
+                값 = float(행.AUC.iloc[-1])
+        except Exception:
+            pass
+
+    if 값 is None:
+        return {"성능_봉인12게임": None,
+                "봉인_안내": ("이 설정으로는 아직 봉인을 열지 않았다. "
+                          "`uv run python -m src.tune_ml --봉인측정` 으로 한 번 잰다")}
+    return {"성능_봉인12게임": 값,
+            "봉인_안내": (f"같은 설정으로 이미 잰 값을 이어 받았다. 원본 기록은 "
+                      f"results.csv 의 LightGBM(배포) 행에 있다")}
 
 
 def fit_final(저장=True):
@@ -206,9 +242,7 @@ def fit_final(저장=True):
                       "0.7522 -> 0.7536 으로 올랐다"),
             "성능_48게임OOF": round(float(auc), 4),
             "확률왜곡_48게임OOF": round(왜곡, 4),
-            "성능_봉인12게임": None,
-            "봉인_안내": ("이 설정으로는 아직 봉인을 열지 않았다. 옛 값 0.7209 는 "
-                      "class_weight='balanced' 모델의 것이라 여기 쓰면 안 된다"),
+            **_봉인기록_잇기(설정),
             "고른기준": ("게임분할에서는 랜덤포레스트가 0.01 정도 앞선다"
                      "(5조각 중 4조각). 그 0.01 을 내주고 학습 14배 속도와 "
                      "SHAP 이 24개 변수에 1:1 로 대응하는 설명 가능성을 얻었다"),
@@ -392,8 +426,26 @@ def 문장(결과):
 
 
 # ── 실행 ────────────────────────────────────────────────────────
-def main():
-    print("배포 모델 학습 · 저장")
+def main(argv=None):
+    """
+    ★ 인자 처리를 두는 이유 — 예전엔 argparse 가 없어서 `--help` 만 붙여도
+      전체 재학습이 돌고 meta 를 덮어썼다. 그때 봉인 성적이 날아갔다.
+      모르는 인자는 여기서 막는다.
+    """
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="SHAP + 배포 모델 저장 (봉인은 열지 않는다)")
+    ap.add_argument("--그림만", action="store_true",
+                    help="모델을 다시 저장하지 않고 그림만 다시 그린다")
+    a = ap.parse_args(argv)
+
+    if a.그림만:
+        print("그림만 다시 그립니다 (모델·meta 는 건드리지 않음)")
+        model, order, thr, meta = load_final()
+        d, y, g = load_all()
+        X = features(d, dict(변수묶음들())["B셋"])
+    else:
+        print("배포 모델 학습 · 저장")
     model, X, y = fit_final()
 
     print(f"\nSHAP 계산 (표본 {min(SHAP_N, len(X)):,}행)")
@@ -419,4 +471,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv[1:])
