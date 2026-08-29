@@ -115,7 +115,17 @@ if st.button("추천 받기", width="stretch"):
                  if pd.notna(appid) else "")
         new_game = ('<span class="new">처음 보는 게임</span>'
              if not int(r.get("학습함", 1)) else "")
-        desc = html.escape(str(r.get("설명") or ""))[:110]
+        # ★ 두 번 이스케이프하면 안 된다.
+        #   스팀이 준 설명에 이미 &quot; 같은 엔티티가 들어 있다 (1,500개 중 77개).
+        #   거기에 html.escape 를 걸면 & 가 &amp; 가 되어 화면에 &quot; 라는
+        #   글자가 그대로 보인다. 먼저 unescape 로 풀고 나서 한 번만 escape 한다.
+        #
+        # ★ 파이썬에서 자르지 않는다.
+        #   전에는 [:110] 으로 잘랐는데 설명 중앙값이 159자라 78%가 문장 중간에서
+        #   끊겼다 ("...후손들의 노력 과"). 두 줄까지만 보이게 하는 것은
+        #   style.css 의 -webkit-line-clamp: 2 가 이미 하고 있고,
+        #   그쪽은 말줄임표(...)로 깔끔하게 끝난다.
+        desc = html.escape(html.unescape(str(r.get("설명") or "")))
         return (
             f'<div class="rec{" risk" if risk else ""}">'
             f'  <div class="thumb" style="{thumb}"></div>'

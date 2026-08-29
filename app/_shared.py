@@ -22,7 +22,9 @@ import streamlit as st                                          # noqa: E402
 from app.theme import (apply_theme, STEAM_BLUE, STEAM_GREEN,     # noqa: E402
                        STEAM_RED, STEAM_NAVY_LIGHT, STEAM_TEXT_MUTED)
 from app._predict import (load_all, load_catalog, build_row, predict,   # noqa: E402
-                          predict_many, explain, gauge, STEAM_IMG)
+                          predict_many, explain, gauge, STEAM_IMG,
+                          load_dl, predict_dl, 한글비율, 판정말,
+                          load_playtime_stats)
 
 PAGES = [
     ("pages/0_시작.py",                 "시작",                    "▶"),
@@ -37,6 +39,16 @@ PAGES = [
 def get_all():
     """모델과 데이터를 한 번만 읽는다."""
     return load_all()
+
+
+@st.cache_resource(show_spinner="글을 읽는 모델을 올리는 중… (처음 한 번만 걸립니다)")
+def get_dl():
+    """딥러닝 모델. 첫 호출 11초, 이후 19ms.
+
+    화면 1 에서만 부른다. 임베딩 모델 90MB 를 안 쓰는 화면에서까지
+    올릴 이유가 없다.
+    """
+    return load_dl()
 
 
 def steam_header(tagline="리뷰를 쓴 그 순간, 이 사람이 게임을 계속할지 맞힌다"):
@@ -62,7 +74,7 @@ def nav(current=None):
         col.page_link(path, label=label, icon=icon, width="stretch")
 
 
-def kpi_bar():
+def kpi_bar(모델=None):
     """페이지 상단 지표 — 시작 화면 카드와 같은 스타일.
 
     어느 화면을 보고 있든 "무슨 데이터로 만든 건지" 가 눈에 있어야
@@ -71,8 +83,14 @@ def kpi_bar():
     """
     _, games, _, _, meta, _ = get_all()
     churn = 0.411                       # dataset_meta.json 의 이탈률
-    auc = float(meta.get("성능_봉인12게임", 0.7209))
-    name = meta["모델"]
+    # 화면 1 은 딥러닝을 쓴다. 상단 지표가 최종 모델 성적을 그대로 띄우면
+    # 관객이 "저 숫자가 지금 이 화면의 모델" 이라고 오해한다.
+    if 모델 == "딥러닝":
+        auc, name, 자 = 0.7295, "MLP(숫자+글)", "게임 분할 · 영어 전용"
+    else:
+        auc = float(meta.get("성능_봉인12게임", 0.7187))
+        name = meta["모델"]
+        자 = f"봉인 12게임 · {name}"
     st.markdown(f"""
 <div class="kpis compact">
   <div class="kpi">
@@ -94,16 +112,19 @@ def kpi_bar():
   <div class="kpi accent">
     <div class="top"><div class="ico">🎯</div><div class="lab">모델 성능</div></div>
     <div class="val">{auc:.3f}<u>AUC</u></div>
-    <div class="sub">봉인 12게임 · {name}</div>
+    <div class="sub">{자}</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
 
-def page(title, caption=""):
-    """모든 페이지가 첫 줄에서 부른다 — 테마 + 미니지표 + 제목."""
+def page(title, caption="", 모델=None):
+    """모든 페이지가 첫 줄에서 부른다 — 테마 + 미니지표 + 제목.
+
+    모델="딥러닝" 을 주면 상단 지표가 딥러닝 성적으로 바뀐다 (화면 1 전용).
+    """
     apply_theme()
-    kpi_bar()
+    kpi_bar(모델)
     st.markdown(f"### {title}")
     if caption:
         st.caption(caption)

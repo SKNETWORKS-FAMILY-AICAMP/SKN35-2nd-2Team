@@ -9,7 +9,7 @@
   "voted_up": 1,
   "review_len": 243,
   "churn": 0,
-  "_p": 0.1988
+  "_p": 0.1546
  },
  {
   "game": "Northgard: Definitive Edition",
@@ -21,7 +21,7 @@
   "voted_up": 1,
   "review_len": 49,
   "churn": 0,
-  "_p": 0.5043
+  "_p": 0.4058
  },
  {
   "game": "Beat Saber",
@@ -33,7 +33,7 @@
   "voted_up": 1,
   "review_len": 239,
   "churn": 1,
-  "_p": 0.5341
+  "_p": 0.4365
  },
  {
   "game": "Hitman: Absolution",
@@ -45,7 +45,7 @@
   "voted_up": 0,
   "review_len": 87,
   "churn": 1,
-  "_p": 0.8436
+  "_p": 0.7827
  },
  {
   "game": "Feed and Grow: Fish",
@@ -57,7 +57,7 @@
   "voted_up": 0,
   "review_len": 91,
   "churn": 1,
-  "_p": 0.8648
+  "_p": 0.8171
  },
  {
   "game": "War Robots",
@@ -69,7 +69,7 @@
   "voted_up": 0,
   "review_len": 80,
   "churn": 0,
-  "_p": 0.1493
+  "_p": 0.1045
  },
  {
   "game": "Halls of Torment",
@@ -81,7 +81,7 @@
   "voted_up": 1,
   "review_len": 102,
   "churn": 0,
-  "_p": 0.2831
+  "_p": 0.2057
  },
  {
   "game": "Forts",
@@ -93,7 +93,7 @@
   "voted_up": 1,
   "review_len": 54,
   "churn": 1,
-  "_p": 0.1359
+  "_p": 0.1022
  },
  {
   "game": "Forts",
@@ -105,7 +105,7 @@
   "voted_up": 1,
   "review_len": 110,
   "churn": 0,
-  "_p": 0.2225
+  "_p": 0.1653
  },
  {
   "game": "Pseudoregalia",
@@ -117,6 +117,6 @@
   "voted_up": 1,
   "review_len": 28,
   "churn": 1,
-  "_p": 0.7759
+  "_p": 0.7271
  }
 ]

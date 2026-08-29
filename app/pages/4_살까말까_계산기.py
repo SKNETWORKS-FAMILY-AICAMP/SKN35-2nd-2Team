@@ -12,11 +12,10 @@
 """
 import html
 
-import numpy as np
 import pandas as pd
 import streamlit as st
 
-from app._shared import get_all, predict_many, page, STEAM_TEXT_MUTED
+from app._shared import get_all, predict_many, page, load_playtime_stats
 from app._predict import load_catalog, STEAM_IMG
 
 MODEL, GAMES, _, _, META, LANG = get_all()
@@ -79,9 +78,38 @@ if st.button("계산하기", width="stretch"):
     p_churn = predict_many(MODEL, META["_order"], "Pretty good game, worth the price.",
                            hours, owned, n_rev, voted, sel, LANG)
     sel["완주확률"] = 1 - p_churn
-    # 예상 플레이 시간 — 완주 확률에서 추정한다.
-    # (예전 임시 모델에는 회귀 모델이 따로 있었지만 최종 모델은 분류만 한다)
-    sel["예상시간"] = (hours * (1 + 6 * sel.완주확률)).clip(lower=0.5)
+    # ── 예상 플레이 시간 ─────────────────────────────────────
+    # 전에는 `hours * (1 + 6 * 완주확률)` 이었다. 그 '6' 에 근거가 없었다.
+    # 우리 모델은 "리뷰 뒤 1시간을 넘기나" 만 예측하지 몇 시간 더 할지는
+    # 예측하지 않는데, 시간당 비용이 그 시간을 분모로 쓰니 결과도 임의값이 됐다.
+    #
+    # 지금은 원본에 있는 실제 값을 쓴다.
+    #   리뷰 뒤 실제로 더 한 시간 = playtime_forever - playtime_at_review
+    # 이걸 게임별로, 이탈자/잔존자를 나눠 중앙값을 내둔 것이 playtime_stats.json 이고
+    # (src/build_playtime_stats.py 가 만든다), 모델의 확률로 두 값을 섞는다.
+    #
+    #   추가시간 = p x (이탈자 중앙값) + (1-p) x (잔존자 중앙값)
+    #
+    # 이탈자 중앙값은 어느 게임에서든 0.00 시간이다 — 떠난 사람은 리뷰를 쓰고
+    # 정말로 한 시간도 더 하지 않는다. 그래서 사실상 (완주확률 x 잔존자 시간) 이다.
+    #
+    # 평균이 아니라 중앙값을 쓴다. 5,000시간 한 사람 몇 명이 평균을 통째로
+    # 끌어올려서, 중앙값이 '보통 사람' 에 가깝다.
+    _PT = load_playtime_stats()
+
+    def 추가시간(g, p):
+        s = _PT["게임"].get(g) or _PT["장르"].get(g) or _PT["전체"]
+        이탈 = s["이탈"] if s["이탈"] is not None else 0.0
+        잔존 = s["잔존"] if s["잔존"] is not None else _PT["전체"]["잔존"]
+        return p * 이탈 + (1 - p) * 잔존
+
+    sel["예상시간"] = [
+        추가시간(r.game if r.game in _PT["게임"] else r.genre_group, pc)
+        for r, pc in zip(sel.itertuples(), p_churn)
+    ]
+    # 근거가 게임별인지 장르별인지 화면에 밝힌다
+    sel["시간근거"] = [("이 게임" if r.game in _PT["게임"] else "같은 장르")
+                    for r in sel.itertuples()]
     sel["가격원"] = (sel.현재가 * RATE).round(-2)
     # 예상 플레이 시간은 '리뷰 이후 추가' 시간이라, 리뷰까지의 시간을 더해야 총 시간이다
     sel["총시간"] = sel.예상시간 + hours
@@ -91,12 +119,12 @@ if st.button("계산하기", width="stretch"):
     def verdict(r):
         # 스팀 게이머 통념 — 시간당 1,000원 아래면 잘 산 것
         if r.시간당 <= 700:
-            return "good", "지금 사세요", "시간당 700원 아래"
+            return "good", "지금 구매", "시간당 700원 아래"
         if r.시간당 <= 1500:
-            return "good", "괜찮습니다", "시간당 1,500원 아래"
+            return "good", "구매 무난", "시간당 1,500원 아래"
         if r.시간당 <= 3000:
-            return "wait", "세일 때", "지금은 조금 비쌉니다"
-        return "no", "보류", "시간당 3,000원 넘습니다"
+            return "wait", "세일 대기", "지금은 조금 비쌉니다"
+        return "no", "구매 보류", "시간당 3,000원 넘습니다"
 
     sel[["cls", "말", "이유"]] = sel.apply(
         lambda r: pd.Series(verdict(r)), axis=1)
@@ -146,26 +174,3 @@ if st.button("계산하기", width="stretch"):
             f'    <div class="hour">{int(r.시간당):,}원</div>'
             f'    <small>시간당 · {r.이유}</small></div>'
             f'</div>', unsafe_allow_html=True)
-
-#     st.divider()
-#     st.markdown(f"""
-# ##### 어떻게 계산했나
-
-# ```
-# 시간당 비용 = 가격 / (리뷰 쓸 때까지 {hours:.0f}시간 + 모델이 예상한 추가 시간)
-# ```
-
-# 예상 플레이 시간은 **당신과 비슷한 사람들이 이 게임을 실제로 얼마나 했는지**로 계산합니다.
-# `{play_k}` · 보유 {owned}개 · `{write_k}` 를 답으로 넣었습니다.
-
-# **판정 기준** — 스팀 게이머 통념인 *"시간당 1,000원"* 을 기준으로 잡았습니다.
-
-# | 시간당 | 판정 |
-# |---|---|
-# | 700원 이하 | 지금 사세요 |
-# | 1,500원 이하 | 괜찮습니다 |
-# | 3,000원 이하 | 세일 때 |
-# | 3,000원 초과 | 보류 |
-# """)
-#     st.caption(f"가격은 스팀 정가를 1달러 = {RATE:,}원으로 환산한 값입니다. "
-#                f"실제 스팀 한국 가격과 다를 수 있습니다.")

@@ -341,6 +341,66 @@ div[data-testid="stProgress"] > div > div > div { background: var(--steam-blue) 
 .dots i.now { background: var(--steam-green); }
 
 /* ============================================================
+   작별 인사 판별기 — 이 화면만 딥러닝을 쓴다는 표시와 글 기여
+   ============================================================ */
+.usenote {
+    font-size: 12.5px; color: var(--steam-text-muted); line-height: 1.65;
+    background: rgba(15,23,32,.5);
+    border: 1px solid var(--steam-navy-light);
+    border-left: 3px solid var(--steam-blue);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+}
+.usenote b { color: #c7d5e0; font-weight: 600; }
+
+/* 시작 화면 — 세계 리뷰 순회 소제목 */
+.tourhead {
+    font-size: 17px; font-weight: 600; color: #e6f0f9;
+    letter-spacing: -.01em; margin-bottom: 4px;
+}
+.toursub {
+    font-size: 12.5px; color: var(--steam-text-muted);
+    line-height: 1.6; margin-bottom: 14px; max-width: 78ch;
+}
+.toursub b { color: #c7d5e0; font-weight: 600; }
+
+/* 오른쪽 칸을 왼쪽 라벨 높이만큼 내린다 */
+.rightpad { height: 30px; }
+
+/* 판정 칸 — st.metric 은 좁은 칸에서 글을 자른다. 직접 그린다. */
+.verdicts { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; margin: 2px 0 10px; }
+@media (max-width: 760px) { .verdicts { grid-template-columns: 1fr; } }
+.vbox {
+    background: rgba(27,40,56,.78);
+    border: 1px solid var(--steam-navy-light);
+    border-radius: 10px; padding: 11px 15px 12px;
+    display: flex; flex-direction: column; gap: 2px;
+}
+.vlab { font-size: 11px; color: var(--steam-text-muted); letter-spacing: .02em; }
+.vval {
+    font-size: 21px; font-weight: 700; color: #e6f0f9;
+    line-height: 1.25; white-space: nowrap;
+}
+.vval.mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.vsub { font-size: 10.5px; color: var(--steam-text-muted); margin-top: 1px; }
+
+.textgap {
+    font-size: 13px; color: #c7d5e0;
+    background: rgba(15,23,32,.5);
+    border: 1px solid var(--steam-navy-light);
+    border-radius: 8px; padding: 10px 14px; margin: 4px 0 12px;
+}
+.textgap span {
+    display: block; font-size: 11px; color: var(--steam-text-muted); margin-top: 3px;
+}
+
+.mnote {
+    font-size: 12.5px; color: var(--steam-text-muted);
+    line-height: 1.7; margin-bottom: 10px;
+}
+.mnote b { color: #c7d5e0; font-weight: 600; }
+.mnote i { color: #8f98a0; }
+
+/* ============================================================
    게임 추천 카드 (나에게 맞는 게임) — 표지 이미지 포함
    이미지는 스팀 CDN 에서 바로 불러온다. 우리 용량은 0.
    ============================================================ */
