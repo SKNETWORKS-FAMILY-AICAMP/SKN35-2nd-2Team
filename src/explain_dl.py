@@ -152,8 +152,9 @@ def global_importance(X, top_n=12, save_fig=True):
         for i, val in enumerate(t.values):
             ax.text(val + t.max() * .012, i, f"{val:.3f}", va="center", fontsize=9)
         ax.set_xlabel("평균 기여도 (SHAP 절댓값)")
-        ax.set_title(f"무엇을 보고 판단하는가  —  '{EMB_GROUP}'은 {N_PCA}개 성분의 합",
-                     fontsize=12, pad=12)
+        ax.set_title("같은 데이터로 학습한 LightGBM 의 변수 중요도\n"
+                     f"(최종 MLP 를 흉내낸 모델이 아님 · '{EMB_GROUP}'은 {N_PCA}개 성분의 합)",
+                     fontsize=11.5, pad=12)
         ax.set_xlim(0, t.max() * 1.15)
         ax.grid(axis="x", alpha=.25); ax.set_axisbelow(True)
         for s in ("top", "right"): ax.spines[s].set_visible(False)
