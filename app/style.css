@@ -748,11 +748,11 @@ div[data-testid="stDataFrame"] { font-size: 0.92rem; }
 /* 판별기 결과 패널 */
 .resultbox {
     background: rgba(27,40,56,.66); border: 1px solid var(--steam-navy-light);
-    border-radius: 12px; padding: 16px 18px; height: 100%;
+    border-radius: 12px; padding: 16px 18px; height: 600px;
 }
 .resultbox .empty {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 380px; color: var(--steam-text-muted); font-size: 13.5px; text-align: center;
+    height: 570px; color: var(--steam-text-muted); font-size: 13.5px; text-align: center;
 }
 .resultbox .empty .big { font-size: 40px; margin-bottom: 10px; opacity: .35; }
 
@@ -984,6 +984,3 @@ div[data-testid="stMultiSelect"] div[role="group"] [class*="placeholder"] {
 .grid td, .grid th.qn { width: auto; }
 
 /* custom css 추가 */
-/* div[data-testid="stElementContainer"] {
-    padding: 16.5px;
-} */

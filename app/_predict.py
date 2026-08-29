@@ -127,9 +127,10 @@ def explain(row, top_n=6):
 def gauge(p, thr):
     """확률을 사람이 읽는 말로. 임계값을 기준으로 나눈다."""
     if p >= thr + .15:
-        return "🔴", "떠날 가능성이 높습니다"
+        return "🔴", "떠날 가능성이 높습니다."
     if p >= thr:
-        return "🟡", "떠나는 쪽입니다"
+        return "🟡", "떠나는 쪽입니다."
     if p >= thr - .15:
-        return "🟢", "남는 쪽입니다"
+        return "🟢", "남는 쪽입니다."
+    
     return "🟢", "계속할 가능성이 높습니다"
