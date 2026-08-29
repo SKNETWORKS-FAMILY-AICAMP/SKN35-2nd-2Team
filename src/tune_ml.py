@@ -349,6 +349,8 @@ def main(argv=None):
     ap.add_argument("--모델", nargs="*", default=None)
     ap.add_argument("--묶음", default="B셋", choices=["A셋", "B셋"])
     ap.add_argument("--불균형만", action="store_true")
+    ap.add_argument("--봉인측정", action="store_true",
+                    help="★ 봉인을 연다. 배포 모델 최종 성적표")
     ap.add_argument("--최종표", action="store_true",
                     help="저장된 최고 설정으로 다시 재서 results.csv 에 합친다")
     a = ap.parse_args(argv)
@@ -363,6 +365,10 @@ def main(argv=None):
           f"이탈률 {y[봉인idx].mean():.4f}")
     print(f"  겹치는 게임 {len(set(g[튜닝idx]) & set(g[봉인idx]))}개 · "
           f"변수 {X.shape[1]}개 ({a.묶음}) · 누수검사 통과")
+
+    if a.봉인측정:
+        봉인측정()
+        return
 
     if a.최종표:
         최종표(a.묶음)
@@ -492,6 +498,94 @@ def 최종표(묶음="B셋", 기록=True):
                   encoding="utf-8-sig")
         print(f"\nresults.csv 에 {len(표)}줄 추가 -> {RESULTS_CSV}")
     return 표
+
+
+
+# ── 봉인 측정 (배포 모델 전용) ──────────────────────────────────
+def 봉인측정(기록=True):
+    """
+    ★★ 봉인 12게임을 연다. 배포 모델의 최종 성적표를 내기 위한 것이다. ★★
+
+    이 함수는 아무것도 선택하지 않는다. 이미 확정된 배포 모델
+    (src/explain_ml.py 의 설정)을 그대로 가져와 한 번 재기만 한다.
+    여기서 나온 숫자를 보고 모델이나 임계값을 바꾸면 봉인이 깨진다.
+
+    개봉 이력 — 결과서에 그대로 적는다
+        1회  최종평가       5모델 비교        (계획된 사용)
+        2회  최종표         results.csv 합침  (같은 값 재측정)
+        3회  결함 감사      정밀도·확률왜곡 확인
+        4회  조각별 왜곡 진단
+        5회  여기 — 배포 모델(LightGBM, class_weight 제거) 최종 성적표
+
+    F1 은 반드시 "전부 이탈" 기준선과 같이 본다. 이탈률이 45.6% 라
+    아무 생각 없이 전부 이탈이라 찍어도 F1 0.626 이 나온다.
+    """
+    from datetime import datetime
+    import lightgbm as lgb
+    from src.explain_ml import BEST_JSON, 배포_설정_덮어쓰기
+
+    d, y, g, X, 튜닝idx, 봉인idx = 준비("B셋")
+    설정 = {**load_json(BEST_JSON)["LightGBM"]["최고설정"], **배포_설정_덮어쓰기}
+    임계값 = load_json(MODELS / "ml_threshold.json")["threshold"]
+
+    print("=" * 76)
+    print("봉인 개봉 — 배포 모델 최종 성적표 (5회차)")
+    print("=" * 76)
+    print(f"  모델    LightGBM · class_weight={설정.get('class_weight')!r}")
+    print(f"  임계값  {임계값}  (48게임 OOF 에서 고른 값)")
+    print(f"  학습    튜닝용 48게임 {len(튜닝idx):,}행")
+    print(f"  시험    봉인 12게임 {len(봉인idx):,}행 · 실제 이탈률 "
+          f"{y[봉인idx].mean():.1%}")
+
+    m = lgb.LGBMClassifier(random_state=SEED, n_jobs=-1, verbose=-1, **설정)
+    p = m.fit(X.iloc[튜닝idx], y[튜닝idx]).predict_proba(X.iloc[봉인idx])[:, 1]
+    yt = y[봉인idx]
+    pred = (p >= 임계값).astype(int)
+
+    r = yt.mean()
+    기준선F1 = 2 * r / (r + 1)          # 전부 이탈이라 찍었을 때
+    점수 = {
+        "AUC": roc_auc_score(yt, p),
+        "PR-AUC": average_precision_score(yt, p),
+        "Recall": recall_score(yt, pred, zero_division=0),
+        "F1": f1_score(yt, pred, zero_division=0),
+    }
+    prec, rec, thr = precision_recall_curve(yt, p)
+    f1s = np.divide(2 * prec * rec, prec + rec, out=np.zeros_like(prec),
+                    where=(prec + rec) > 0)
+    i = int(np.argmax(f1s))
+
+    print()
+    print(f"AUC        {점수['AUC']:.4f}   (무작위 0.5)")
+    print(f"  PR-AUC     {점수['PR-AUC']:.4f}   (무작위 {r:.4f})")
+    print(f"  F1         {점수['F1']:.4f}   (전부-이탈 기준선 {기준선F1:.4f} · "
+          f"차이 {점수['F1']-기준선F1:+.4f})")
+    print(f"  Recall     {점수['Recall']:.4f}")
+    print(f"  확률 왜곡   {p.mean()-r:+.1%}   (예측평균 {p.mean():.1%} vs 실제 {r:.1%})")
+    print(f"  이탈 판정   {pred.mean():.1%}")
+
+    if 기록:
+        행 = {"모델명": "LightGBM(배포)", "변수묶음": "B셋", "분할방식": "봉인(게임12)",
+             **{k: round(v, 4) for k, v in 점수.items()},
+             "편차": 0.0, "best_F1": round(float(f1s[i]), 4),
+             "best_임계값": round(float(thr[i]) if i < len(thr) else 1.0, 3),
+             "학습시간": "-", "전처리버전": _버전(), "행수": len(y),
+             "시각": datetime.now().strftime("%m-%d %H:%M"),
+             "메모": (f"배포본 · class_weight 제거 · 임계값 {임계값} · "
+                    f"전부이탈 기준선 F1 {기준선F1:.4f} · 봉인 5회차 개봉")}
+        기존 = pd.read_csv(RESULTS_CSV, encoding="utf-8")
+        pd.DataFrame([행])[list(기존.columns)].to_csv(
+            RESULTS_CSV, mode="a", index=False, header=False, encoding="utf-8-sig")
+        meta = load_json(MODELS / "ml_meta.json")
+        meta["성능_봉인12게임"] = round(점수["AUC"], 4)
+        meta["봉인_안내"] = (f"5회차 개봉에서 이 배포본으로 측정한 값이다. "
+                        f"F1 {점수['F1']:.4f} 는 전부-이탈 기준선 {기준선F1:.4f} 대비 "
+                        f"{점수['F1']-기준선F1:+.4f} 다. 확률 왜곡 {p.mean()-r:+.1%}")
+        save_json(meta, MODELS / "ml_meta.json")
+        print()
+        print(f"기록: {RESULTS_CSV.name} · ml_meta.json")
+    return 점수
+
 
 
 if __name__ == "__main__":

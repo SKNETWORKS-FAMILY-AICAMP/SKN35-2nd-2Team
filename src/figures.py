@@ -159,6 +159,53 @@ def fig_text_ladder():
     fig.tight_layout(); fig.savefig(FIGURES / "05_글을읽는방식.png"); plt.close(fig)
 
 
+# ── 6. 학습 곡선 — 데이터를 더 넣으면 오르나 ────────────────────
+def fig_learning_curve():
+    """
+    데이터 양이 병목인지 확인한 결과.
+    마지막 구간이 평평하면 "더 모아도 안 오른다" 는 뜻이다.
+    """
+    import matplotlib.pyplot as plt
+
+    n    = [5368, 13422, 26844, 40266, 53689]
+    auc  = [0.7373, 0.7564, 0.7657, 0.7752, 0.7770]
+    # 팀원이 같은 모델을 2.1배 데이터로 돌린 결과 (게임분할 평균)
+    full = {"영어 6.7만": 0.7389, "전체 13.9만": 0.7365}
+
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(11, 4.6),
+                                  gridspec_kw={"width_ratios": [1.7, 1]})
+
+    ax.plot(n, auc, "-o", lw=2.4, ms=8, color=C_GROUP)
+    for x, v in zip(n, auc):
+        ax.annotate(f"{v:.4f}", (x, v), textcoords="offset points",
+                    xytext=(0, 9), ha="center", fontsize=9)
+    for i in range(1, len(n)):
+        d = auc[i] - auc[i - 1]
+        ax.annotate(f"{d:+.4f}", ((n[i] + n[i-1]) / 2, (auc[i] + auc[i-1]) / 2),
+                    textcoords="offset points", xytext=(6, -20), ha="center",
+                    fontsize=9, color="#16a34a" if d > .005 else "#b91c1c",
+                    fontweight="bold" if d <= .005 else "normal")
+    ax.annotate("여기서 평평해진다", xy=(53689, 0.7770), xytext=(38000, 0.7885),
+                fontsize=9.5, color="#b91c1c",
+                arrowprops=dict(arrowstyle="->", color="#b91c1c", lw=1.4))
+    ax.set_xlabel("학습에 쓴 행 수"); ax.set_ylabel("AUC (랜덤 분할)")
+    ax.set_title("데이터를 늘리면 계속 오르는가", fontsize=12, pad=10)
+    ax.set_ylim(0.725, 0.795)
+    ax.grid(alpha=.25); ax.set_axisbelow(True)
+    for s in ("top", "right"): ax.spines[s].set_visible(False)
+
+    ax2.bar(list(full), list(full.values()), color=[C_GROUP, C_RANDOM], width=.55)
+    for i, v in enumerate(full.values()):
+        ax2.text(i, v + .0008, f"{v:.4f}", ha="center", fontsize=10)
+    ax2.set_ylim(0.72, 0.75); ax2.set_ylabel("AUC (게임 단위, 4개 모델 평균)")
+    ax2.set_title("데이터 2.1배로 늘리면", fontsize=12, pad=10)
+    ax2.grid(axis="y", alpha=.25); ax2.set_axisbelow(True)
+    for s in ("top", "right"): ax2.spines[s].set_visible(False)
+
+    fig.suptitle("데이터 양은 병목이 아니었다", fontsize=13.5)
+    fig.tight_layout(); fig.savefig(FIGURES / "06_학습곡선.png"); plt.close(fig)
+
+
 if __name__ == "__main__":
     import pandas as _pd
     from sklearn.metrics import roc_auc_score
@@ -187,4 +234,5 @@ if __name__ == "__main__":
 
     fig_text_effect(); print("  03_글의효과.png")
     fig_text_ladder(); print("  05_글을읽는방식.png")
+    fig_learning_curve(); print("  06_학습곡선.png")
     print(f"\n저장 위치: {FIGURES}")

@@ -152,8 +152,9 @@ def global_importance(X, top_n=12, save_fig=True):
         for i, val in enumerate(t.values):
             ax.text(val + t.max() * .012, i, f"{val:.3f}", va="center", fontsize=9)
         ax.set_xlabel("평균 기여도 (SHAP 절댓값)")
-        ax.set_title(f"무엇을 보고 판단하는가  —  '{EMB_GROUP}'은 {N_PCA}개 성분의 합",
-                     fontsize=12, pad=12)
+        ax.set_title("같은 데이터로 학습한 LightGBM 의 변수 중요도\n"
+                     f"(최종 MLP 를 흉내낸 모델이 아님 · '{EMB_GROUP}'은 {N_PCA}개 성분의 합)",
+                     fontsize=11.5, pad=12)
         ax.set_xlim(0, t.max() * 1.15)
         ax.grid(axis="x", alpha=.25); ax.set_axisbelow(True)
         for s in ("top", "right"): ax.spines[s].set_visible(False)
@@ -172,11 +173,11 @@ def explain_row(row_df, top_n=5):
     import shap
 
     b = _load()
-    X = row_df.reindex(columns=b["template"].columns)
-    for c in b["template"].columns:                 # 범주 목록을 학습 기준으로
-        if isinstance(b["template"][c].dtype, pd.CategoricalDtype):
-            X[c] = pd.Categorical(X[c].astype(str),
-                                  categories=b["template"][c].cat.categories)
+    # ★ 학습 때와 똑같이 임베딩(emb_*)에 PCA 를 먹여 글_* 로 바꾼다.
+    #   예전엔 reindex 만 해서 글_0..글_63 이 전부 NaN 이 됐고,
+    #   그 결과 리뷰 글의 기여가 항상 정확히 0 으로 나왔다.
+    X = _prep(row_df, b["cols"], b["pca"], b["emb_cols"], ref=b["template"])
+    X = X.reindex(columns=b["template"].columns)
     sv = np.array(shap.TreeExplainer(b["model"]).shap_values(X))
     v = (sv[..., 1] if sv.ndim == 3 else sv)[0]
     s = pd.Series(v, index=X.columns)

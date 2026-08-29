@@ -5,8 +5,9 @@
 왜 필요한가
     숫자 하나가 바뀌면 문서 여러 곳을 손으로 따라 고쳐야 하는데 꼭 하나씩 빠진다.
     실제로 겪은 것들:
-      배포 모델을 튜닝 설정으로 다시 저장 -> 임계값 0.3463 -> 0.3735
-        문서 5곳 중 4곳만 고쳐서 1곳이 옛 값으로 남았다
+      배포 모델을 다시 저장할 때마다 임계값이 바뀐다
+        (0.3463 -> 0.3735 -> 0.2899). 한 번은 문서 5곳 중 4곳만
+        고쳐서 1곳이 옛 값으로 남았다
       main 병합으로 결과 4줄 추가 -> 문서의 "61줄" 이 옛 값이 됐다
       explain.py -> explain_dl.py 개명 -> 문서의 경로가 죽은 링크가 됐다
 
@@ -31,6 +32,7 @@ import argparse
 import itertools
 import json
 import re
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -259,6 +261,12 @@ def 감사(path, vals):
 
 
 def main(argv=None):
+    # 윈도우 기본 콘솔(cp949)은 '—' 같은 글자를 못 찍고 죽는다.
+    # 검사는 다 끝났는데 마지막 줄에서 터져서 결과를 못 본다.
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except Exception:
+        pass
     ap = argparse.ArgumentParser(description="결과서 숫자·경로 감사")
     ap.add_argument("문서", nargs="*", help="생략하면 docs/*.md 전부")
     a = ap.parse_args(argv)
