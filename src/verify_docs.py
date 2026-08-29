@@ -31,6 +31,7 @@ import argparse
 import itertools
 import json
 import re
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -259,6 +260,12 @@ def 감사(path, vals):
 
 
 def main(argv=None):
+    # 윈도우 기본 콘솔(cp949)은 '—' 같은 글자를 못 찍고 죽는다.
+    # 검사는 다 끝났는데 마지막 줄에서 터져서 결과를 못 본다.
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except Exception:
+        pass
     ap = argparse.ArgumentParser(description="결과서 숫자·경로 감사")
     ap.add_argument("문서", nargs="*", help="생략하면 docs/*.md 전부")
     a = ap.parse_args(argv)
