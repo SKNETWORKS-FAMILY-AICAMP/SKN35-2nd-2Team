@@ -52,22 +52,21 @@ hours, n_rev = PLAY[play_k], WRITE[write_k]
 voted = generous.startswith("👍")
 
 # ── 게임 고르기 ─────────────────────────────────────────────────
-st.markdown("##### 사려는 게임을 고르세요")
+# st.markdown("##### 사려는 게임을 고르세요")
 paid = CAT[CAT.현재가 > 0].sort_values("리뷰수", ascending=False)
 
 # 이미 산 게임은 목록에서 뺀다 — 또 살 일이 없다
 have = st.multiselect("이미 갖고 있는 게임 (목록에서 제외됩니다)",
-                      paid.game.tolist(), placeholder="게임 이름을 입력해 고르세요",
+                      sorted(paid.game.tolist()), placeholder="게임 이름을 입력해 고르세요",
                       help=f"스팀 전체가 아니라 **리뷰가 많은 상위 {len(CAT)}개** 중 "
                            f"유료 게임만 담고 있습니다")
 st.caption(f"※ 스팀 전체 게임이 아니라 **누적 리뷰가 많은 순으로 {len(CAT)}개**를 다루며, "
            f"그중 **유료 게임 {len(paid)}개**가 목록에 있습니다 (무료는 계산할 게 없어 제외).")
 if have:
     paid = paid[~paid.game.isin(have)]
-default = [g for g in ["Assassin's Creed Mirage", "Planet Coaster 2", "Tales of ARISE"]
-           if g in set(paid.game)][:3]
-picks = st.multiselect("게임 (여러 개 고를 수 있습니다)", paid.game.tolist(),
-                       default=default, max_selections=12)
+    
+default = [g for g in ["Assassin's Creed Mirage", "Planet Coaster 2", "Tales of ARISE"] if g in set(paid.game)][:3]
+picks = st.multiselect("사려고 하는 게임 (여러 개 고를 수 있습니다)", sorted(paid.game.tolist()), default=default, max_selections=12)
 
 budget = st.number_input("예산 (원) — 0이면 제한 없음", 0, 1_000_000, 0, step=10_000)
 
@@ -148,25 +147,25 @@ if st.button("계산하기", width="stretch"):
             f'    <small>시간당 · {r.이유}</small></div>'
             f'</div>', unsafe_allow_html=True)
 
-    st.divider()
-    st.markdown(f"""
-##### 어떻게 계산했나
+#     st.divider()
+#     st.markdown(f"""
+# ##### 어떻게 계산했나
 
-```
-시간당 비용 = 가격 / (리뷰 쓸 때까지 {hours:.0f}시간 + 모델이 예상한 추가 시간)
-```
+# ```
+# 시간당 비용 = 가격 / (리뷰 쓸 때까지 {hours:.0f}시간 + 모델이 예상한 추가 시간)
+# ```
 
-예상 플레이 시간은 **당신과 비슷한 사람들이 이 게임을 실제로 얼마나 했는지**로 계산합니다.
-`{play_k}` · 보유 {owned}개 · `{write_k}` 를 답으로 넣었습니다.
+# 예상 플레이 시간은 **당신과 비슷한 사람들이 이 게임을 실제로 얼마나 했는지**로 계산합니다.
+# `{play_k}` · 보유 {owned}개 · `{write_k}` 를 답으로 넣었습니다.
 
-**판정 기준** — 스팀 게이머 통념인 *"시간당 1,000원"* 을 기준으로 잡았습니다.
+# **판정 기준** — 스팀 게이머 통념인 *"시간당 1,000원"* 을 기준으로 잡았습니다.
 
-| 시간당 | 판정 |
-|---|---|
-| 700원 이하 | 지금 사세요 |
-| 1,500원 이하 | 괜찮습니다 |
-| 3,000원 이하 | 세일 때 |
-| 3,000원 초과 | 보류 |
-""")
-    st.caption(f"가격은 스팀 정가를 1달러 = {RATE:,}원으로 환산한 값입니다. "
-               f"실제 스팀 한국 가격과 다를 수 있습니다.")
+# | 시간당 | 판정 |
+# |---|---|
+# | 700원 이하 | 지금 사세요 |
+# | 1,500원 이하 | 괜찮습니다 |
+# | 3,000원 이하 | 세일 때 |
+# | 3,000원 초과 | 보류 |
+# """)
+#     st.caption(f"가격은 스팀 정가를 1달러 = {RATE:,}원으로 환산한 값입니다. "
+#                f"실제 스팀 한국 가격과 다를 수 있습니다.")

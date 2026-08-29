@@ -14,6 +14,7 @@ import html
 import numpy as np
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 from app._shared import get_all, predict_many, page
 from app._predict import load_catalog, STEAM_IMG
@@ -112,7 +113,7 @@ if st.button("추천 받기", width="stretch"):
         appid = r.get("appid")
         thumb = (f'background-image:url({STEAM_IMG.format(int(appid))})'
                  if pd.notna(appid) else "")
-        新 = ('<span class="new">처음 보는 게임</span>'
+        new_game = ('<span class="new">처음 보는 게임</span>'
              if not int(r.get("학습함", 1)) else "")
         desc = html.escape(str(r.get("설명") or ""))[:110]
         return (
@@ -121,14 +122,15 @@ if st.button("추천 받기", width="stretch"):
             f'  <div class="body">'
             f'    <div class="name">{html.escape(str(r.game))}</div>'
             f'    <div class="desc">{desc}</div>'
-            f'    <div class="tags">{新}'
+            f'    <div class="tags">{new_game}'
             f'      <span>{html.escape(str(r.genre_group))}</span>'
             f'      <span>{html.escape(str(r.grade))}</span>'
             f'      <span>{int(r.release_year)}</span></div>'
             f'  </div>'
             f'  <div class="pct"><b>{r.완주확률:.0%}</b>'
             f'    <span>끝까지 할 확률</span></div>'
-            f'</div>')
+            f'</div>'
+        )
 
     st.markdown("##### 🟢 끝까지 할 것 같은 게임")
     for _, r in res.nlargest(8, "완주확률").iterrows():
@@ -154,5 +156,4 @@ if st.button("추천 받기", width="stretch"):
             .style.format({"완주확률": "{:.1%}", "출시": "{:.0f}"}),
             width="stretch", hide_index=True, height=360)
 
-st.caption("이 예측은 **\"당신 같은 사람이 이 게임에 리뷰를 쓴다면\"** 을 전제로 합니다. "
-           "우리 데이터가 리뷰를 쓴 사람만 담고 있기 때문입니다.")
+# st.caption("이 예측은 **\"당신 같은 사람이 이 게임에 리뷰를 쓴다면\"** 을 전제로 합니다. 우리 데이터가 리뷰를 쓴 사람만 담고 있기 때문입니다.")

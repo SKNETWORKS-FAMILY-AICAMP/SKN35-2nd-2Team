@@ -43,17 +43,19 @@ def load_all():
     """화면이 필요로 하는 것 전부. Streamlit 쪽에서 캐시를 씌워 쓴다."""
     model, order, thr, meta = load_final()
     games = pd.read_csv(GAMES_CSV, encoding=ENC_READ)
+
     # games.csv 에는 설명이 없다. catalog.csv 를 만들 때 스팀에서 같이 받아뒀고
     # 우리 60개 중 58개가 거기 들어 있으니 appid 로 붙여 온다. 새로 받을 게 없다.
     if CATALOG_CSV.exists():
         cat = pd.read_csv(CATALOG_CSV, encoding=ENC_READ)
         if "설명" in cat.columns:
-            games = games.merge(cat[["appid", "설명"]].drop_duplicates("appid"),
-                                on="appid", how="left")
+            games = games.merge(cat[["appid", "설명"]].drop_duplicates("appid"), on="appid", how="left")
+
     cards = json.load(open(CARDS_JSON, encoding=ENC_READ))
     unseen = pd.read_csv(UNSEEN_CSV, encoding=ENC_READ)
     lang = json.load(open(LANG_STATS, encoding=ENC_READ))
     meta = {**meta, "임계값": thr, "_order": order}
+    
     return model, games, cards, unseen, meta, lang
 
 
@@ -125,9 +127,10 @@ def explain(row, top_n=6):
 def gauge(p, thr):
     """확률을 사람이 읽는 말로. 임계값을 기준으로 나눈다."""
     if p >= thr + .15:
-        return "🔴", "떠날 가능성이 높습니다"
+        return "🔴", "떠날 가능성이 높습니다."
     if p >= thr:
-        return "🟡", "떠나는 쪽입니다"
+        return "🟡", "떠나는 쪽입니다."
     if p >= thr - .15:
-        return "🟢", "남는 쪽입니다"
+        return "🟢", "남는 쪽입니다."
+    
     return "🟢", "계속할 가능성이 높습니다"

@@ -84,6 +84,7 @@ if ss.i >= N:
 
     st.caption(f"같은 {N}문제를 각자 푼 결과입니다. 두 점수를 더하는 것이 아닙니다. "
                f"동전 던지기로 찍으면 평균 {N / 2:.0f}개를 맞힙니다.")
+    
     st.dataframe(pd.DataFrame(ss.log), width="stretch", hide_index=True)
 
     c = st.columns([2, 1, 2])[1]
@@ -165,4 +166,4 @@ else:
         ss.shown = False
         st.rerun()
 
-st.caption(f"문제 {N}장은 정답 비율 {N//2}:{N//2} 무작위 표본입니다. 난이도를 조작하지 않았습니다 · 모델 판정 기준 {THR:.0%}")
+# st.caption(f"문제 {N}장은 정답 비율 {N//2}:{N//2} 무작위 표본입니다. 난이도를 조작하지 않았습니다 · 모델 판정 기준 {THR:.0%}")

@@ -19,6 +19,8 @@ dependencies = [
     "imbalanced-learn>=0.14.2",
     "autogluon-tabular>=1.6.1",
     "autogluon-multimodal>=1.6.1",
+    "pydeck>=0.9.3",
+    "streamlit-autorefresh>=1.0.1",
 ]
 
 [tool.uv]
