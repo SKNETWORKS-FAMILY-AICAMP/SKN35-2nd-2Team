@@ -172,11 +172,11 @@ def explain_row(row_df, top_n=5):
     import shap
 
     b = _load()
-    X = row_df.reindex(columns=b["template"].columns)
-    for c in b["template"].columns:                 # 범주 목록을 학습 기준으로
-        if isinstance(b["template"][c].dtype, pd.CategoricalDtype):
-            X[c] = pd.Categorical(X[c].astype(str),
-                                  categories=b["template"][c].cat.categories)
+    # ★ 학습 때와 똑같이 임베딩(emb_*)에 PCA 를 먹여 글_* 로 바꾼다.
+    #   예전엔 reindex 만 해서 글_0..글_63 이 전부 NaN 이 됐고,
+    #   그 결과 리뷰 글의 기여가 항상 정확히 0 으로 나왔다.
+    X = _prep(row_df, b["cols"], b["pca"], b["emb_cols"], ref=b["template"])
+    X = X.reindex(columns=b["template"].columns)
     sv = np.array(shap.TreeExplainer(b["model"]).shap_values(X))
     v = (sv[..., 1] if sv.ndim == 3 else sv)[0]
     s = pd.Series(v, index=X.columns)
