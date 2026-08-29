@@ -28,8 +28,16 @@ _cache = {}
 
 
 def _load():
-    """모델·임계값·열순서·임베딩 모델을 한 번만 읽어 재사용한다."""
-    if not _cache:
+    """
+    모델·임계값·열순서를 한 번만 읽어 재사용한다.
+
+    ★ 조건이 `if not _cache:` 이면 안 된다.
+      _encoder() 가 같은 _cache 에 "enc" 를 넣으므로, 임베딩 모델이 먼저
+      올라간 뒤에는 캐시가 비어 있지 않아 모델을 아예 안 읽고 KeyError 로 죽는다.
+      predict_one() 은 _load() 를 먼저 불러서 안 걸렸을 뿐이다.
+      (화면 담당이 explain_row(_build_row(...)) 를 직접 부르다 발견)
+    """
+    if "model" not in _cache:
         import joblib
         _cache["model"] = joblib.load(MODELS / "dl_model.joblib")
         _cache["thr"] = load_json(MODELS / "dl_threshold.json")["threshold"]
