@@ -27,11 +27,16 @@ SHAP — 머신러닝 모델이 왜 그렇게 판단했는지 캔다.
     화면 1 은 확률을 그대로 보여주므로 B셋이어야 한다.
 
 왜 LightGBM 인가
-    게임 분할 AUC 는 랜덤포레스트가 0.7545 로 가장 높다 (LightGBM 0.7405).
-    다만 랜덤포레스트는 원핫을 거쳐야 해서 SHAP 값이 "genre_group=협동" 처럼
-    쪼개진 열로 나온다. 화면에 이유를 보여주려면 다시 합쳐야 한다.
-    LightGBM 은 범주형을 그대로 먹어 24개 변수에 1:1 로 대응한다.
-    0.014 를 내주고 설명 가능성을 얻는 교환 — 팀에서 다시 정해도 된다.
+    게임 분할에서는 랜덤포레스트가 0.01 정도 앞선다 (5조각 중 4조각에서 우세).
+    "차이가 없다" 가 아니라 "0.01 을 내주고 두 가지를 샀다" 가 맞는 표현이다.
+      학습이 14배 빠르다 (1.9초 vs 27.3초)
+      범주형을 그대로 먹어 SHAP 이 24개 변수에 1:1 로 대응한다.
+      랜덤포레스트는 원핫을 거쳐 "genre_group=협동" 처럼 쪼개진 열로 나오므로
+      화면에 이유를 보여주려면 다시 합쳐야 한다.
+    팀에서 다시 정해도 된다.
+
+배포에서 튜닝 설정을 하나 덮어쓴다
+    class_weight="balanced" 를 뺀다. 아래 배포_설정_덮어쓰기 참조.
 
 실행 (레포 루트에서)
     uv run python -m src.explain_ml
@@ -89,50 +94,78 @@ def 한글(c):
 BEST_JSON = MODELS / "ml_best_params.json"
 
 
+# ★ 튜닝이 고른 class_weight="balanced" 를 배포에서는 뺀다
+#
+#   왜  튜닝의 선택 기준이 AUC 하나였다. AUC 는 순위만 보므로 확률이 통째로
+#       위로 밀려도 안 떨어진다. 그래서 확률을 부풀리는 설정이 뽑혔다.
+#       화면은 확률 숫자를 그대로 보여주므로 이 왜곡이 그대로 노출된다.
+#
+#   근거  튜닝용 48게임 안에서만 측정했다 (봉인 미사용).
+#         게임 조각별 왜곡(예측평균 - 실제)
+#           balanced 있음   +2.3% ~ +17.0%   절대평균 7.8%
+#           balanced 제거   -3.8% ~  +7.9%   절대평균 4.0%
+#         안쪽 CV AUC 는 오히려 올랐다  0.7522 -> 0.7536
+#
+#   한계  남은 왜곡은 "어떤 게임이 시험지가 되느냐" 에 따른 것이라
+#         CalibratedClassifierCV 로도 못 고친다 (평균 편향이 이미 +1.1% 라
+#         보정기가 배울 게 없다). 게임이 60개뿐인 데서 오는 한계다.
+#
+#   ml_best_params.json 은 고치지 않는다 — 그건 "튜닝이 무엇을 골랐나" 의 기록이다.
+#   배포에서 무엇을 왜 바꿨는지는 ml_meta.json 에 남긴다.
+배포_설정_덮어쓰기 = {"class_weight": None}
+
+
 def fit_final(저장=True):
     """
     B셋 · 전체 데이터로 LightGBM 을 학습하고 저장한다.
 
-    설정과 임계값은 src/tune_ml.py 가 고른 것을 그대로 쓴다
-    (models/ml_best_params.json). 둘 다 봉인 12게임을 한 번도 안 본 상태에서
-    튜닝용 48게임의 안쪽 CV 로만 골랐다.
+    설정은 src/tune_ml.py 가 고른 것을 쓰되, 위 배포_설정_덮어쓰기 를 적용한다.
+    임계값은 그 설정으로 튜닝용 48게임의 CV out-of-fold 에서 다시 고른다
+    (설정이 바뀌면 확률 분포가 달라지므로 옛 임계값을 그대로 쓰면 안 된다).
 
-    ml_best_params.json 이 없으면 기본값으로 학습하고 임계값은
-    떼어둔 시험셋에서 고른다 (튜닝 전 동작).
+    ★ 봉인 12게임은 여기서 한 번도 등장하지 않는다.
+      배포 모델 자체는 전체 데이터로 학습하지만(정상), 임계값 선택과
+      성능 측정에는 48게임만 쓴다.
     """
     import joblib
     import lightgbm as lgb
+    from sklearn.model_selection import GroupKFold, cross_val_predict
+    from src.tune_ml import 안쪽조각, 준비
 
-    d, y, g = load_all()
-    cols = dict(변수묶음들())["B셋"]
-    X = features(d, cols)                      # 누수 컬럼은 여기서 막힌다
-    tr, te = make_splits(d, g)["random"][0]
+    d, y, g, X, 튜닝idx, _봉인idx = 준비("B셋")   # _봉인idx 는 쓰지 않는다
 
     튜닝됨 = BEST_JSON.exists()
     if 튜닝됨:
         정보 = load_json(BEST_JSON)["LightGBM"]
-        설정 = {k: v for k, v in 정보["최고설정"].items()}
-        임계값 = float(정보["임계값"])          # OOF 로 고른 값 — 봉인 안 씀
-        print(f"  튜닝 설정 사용 (ml_best_params.json)")
-        print(f"    {설정}")
+        설정 = {**정보["최고설정"], **배포_설정_덮어쓰기}
+        바뀐것 = {k: (정보["최고설정"].get(k), v)
+                for k, v in 배포_설정_덮어쓰기.items()
+                if 정보["최고설정"].get(k) != v}
+        print("  튜닝 설정 사용 (ml_best_params.json)")
+        for k, (전, 후) in 바뀐것.items():
+            print(f"    배포에서 변경: {k}  {전!r} -> {후!r}")
     else:
         설정 = dict(n_estimators=400, learning_rate=0.1, num_leaves=31)
-        임계값 = None
+        바뀐것 = {}
         print("  ml_best_params.json 이 없어 기본값으로 학습합니다")
 
     def _new():
         return lgb.LGBMClassifier(random_state=SEED, n_jobs=-1, verbose=-1, **설정)
 
-    # ① 참고용 성능. 임계값이 없으면 여기서 고른다
-    probe = _new().fit(X.iloc[tr], y[tr])
-    p = probe.predict_proba(X.iloc[te])[:, 1]
-    auc = roc_auc_score(y[te], p)
-    if 임계값 is None:
-        prec, rec, thr = precision_recall_curve(y[te], p)
-        f1 = np.divide(2 * prec * rec, prec + rec, out=np.zeros_like(prec),
-                       where=(prec + rec) > 0)
-        best = int(np.argmax(f1))
-        임계값 = float(thr[best]) if best < len(thr) else 0.5
+    # ① 임계값을 다시 고른다 — 튜닝용 48게임의 CV out-of-fold 에서만
+    Xt, yt, gt = X.iloc[튜닝idx], y[튜닝idx], g[튜닝idx]
+    oof = cross_val_predict(_new(), Xt, yt, groups=gt,
+                            cv=GroupKFold(n_splits=안쪽조각),
+                            method="predict_proba", n_jobs=1)[:, 1]
+    auc = roc_auc_score(yt, oof)
+    prec, rec, thr = precision_recall_curve(yt, oof)
+    f1 = np.divide(2 * prec * rec, prec + rec, out=np.zeros_like(prec),
+                   where=(prec + rec) > 0)
+    best = int(np.argmax(f1))
+    임계값 = float(thr[best]) if best < len(thr) else 0.5
+    왜곡 = float(oof.mean() - yt.mean())
+    print(f"  48게임 OOF — AUC {auc:.4f} · 확률왜곡 {왜곡:+.1%} · "
+          f"임계값 {임계값:.4f} (F1 {f1[best]:.4f})")
 
     # ② 전체 데이터로 다시 학습한다 (배포용은 데이터를 다 쓴다)
     model = _new().fit(X, y)
@@ -155,29 +188,40 @@ def fit_final(저장=True):
         }, ORDER_JSON)
         save_json({
             "threshold": round(임계값, 4),
-            "기준": ("튜닝용 48게임의 CV out-of-fold 에서 F1 이 최대가 되는 값 "
-                   "(봉인 12게임은 쓰지 않았다)") if 튜닝됨 else
-                  "떼어둔 시험셋에서 F1 이 최대가 되는 값",
+            "기준": "튜닝용 48게임의 CV out-of-fold 에서 F1 이 최대가 되는 값",
+            "봉인사용": False,
+            "주의": ("설정을 바꾸면 확률 분포가 달라져 이 값도 달라진다. "
+                   "모델과 임계값은 한 세트다"),
         }, THR_JSON)
         save_json({
             "모델": "LightGBM(숫자+범주)", "변수묶음": "B셋", "학습행수": int(len(X)),
             "언어": "전체 30개", "전처리버전": _버전(),
             "튜닝": 튜닝됨, "설정": 설정,
-            "성능_랜덤분할": round(float(auc), 4),
-            "성능_봉인12게임": 0.7209,
-            "성능_게임5조각": 0.7479,
-            "고른기준": ("성능 1위는 랜덤포레스트(봉인 0.7232)지만 차이 0.0023 이 "
-                     "게임분할 편차(±0.04)에 묻힌다. 학습이 14배 빠르고 범주형을 "
-                     "그대로 먹어 SHAP 이 24개 변수와 1:1 로 대응해 화면 1 의 "
-                     "근거 표시가 간단하다"),
+            "배포에서_변경": {k: {"튜닝이_고른값": 전, "배포값": 후}
+                        for k, (전, 후) in 바뀐것.items()},
+            "변경_이유": ("튜닝 기준이 AUC 하나였는데 AUC 는 순위만 보므로 "
+                      "확률을 부풀리는 class_weight 가 뽑혔다. 화면이 확률을 "
+                      "그대로 보여주므로 배포에서는 뺀다. 48게임 조각별 왜곡이 "
+                      "절대평균 7.8% -> 4.0% 로 줄고 안쪽 CV AUC 는 "
+                      "0.7522 -> 0.7536 으로 올랐다"),
+            "성능_48게임OOF": round(float(auc), 4),
+            "확률왜곡_48게임OOF": round(왜곡, 4),
+            "성능_봉인12게임": None,
+            "봉인_안내": ("이 설정으로는 아직 봉인을 열지 않았다. 옛 값 0.7209 는 "
+                      "class_weight='balanced' 모델의 것이라 여기 쓰면 안 된다"),
+            "고른기준": ("게임분할에서는 랜덤포레스트가 0.01 정도 앞선다"
+                     "(5조각 중 4조각). 그 0.01 을 내주고 학습 14배 속도와 "
+                     "SHAP 이 24개 변수에 1:1 로 대응하는 설명 가능성을 얻었다"),
             "왜_B셋": ("A셋은 게임 분할에서 확률이 무너진다 — 실제 이탈률 37% 인 "
                      "조각에 평균 70% 를 뱉는다"),
+            "한계": ("남은 확률 오차는 게임 조각별로 -3.6% ~ +6.8% 흔들린다. "
+                   "게임이 60개뿐인 데서 오는 것이라 확률 보정으로도 못 고친다"),
             "주의": "lang_stats.json 과 같은 전처리 버전이어야 한다",
         }, META_JSON)
         print(f"  저장: {MODEL_PKL.name} · {ORDER_JSON.name} · "
               f"{THR_JSON.name} · {META_JSON.name}")
 
-    print(f"  랜덤분할 AUC {auc:.4f} | 임계값 {임계값:.3f} (기본 0.5 대신)")
+    print(f"  배포 모델 저장 완료 — 봉인 12게임은 사용하지 않았습니다")
     return model, X, y
 
 
