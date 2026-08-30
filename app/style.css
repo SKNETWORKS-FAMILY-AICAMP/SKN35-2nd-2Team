@@ -65,7 +65,18 @@
     to   { transform: translateY(-8px); }
 }
 
-[data-testid="stHeader"] { background: rgba(0,0,0,0); }
+/* 상단 메뉴 띠.
+   투명(rgba(0,0,0,0))으로 두면 스크롤할 때 본문이 이 띠 아래를 지나가면서
+   메뉴 글씨와 겹쳐 보인다. 헤더는 화면에 고정(top:0)인데 본문은 그 뒤로
+   흘러가기 때문이다.
+   그렇다고 불투명 단색을 깔면 물결 배경이 잘린 띠처럼 보인다.
+   반투명 + 블러로 뒤를 흐려서, 배경은 살리고 글씨 충돌만 없앤다. */
+[data-testid="stHeader"] {
+    background: rgba(23, 33, 47, .82);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+    border-bottom: 1px solid rgba(102, 192, 244, .10);
+}
 
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0f1720 0%, var(--steam-navy) 100%);
@@ -379,18 +390,25 @@ div[data-testid="stProgress"] > div > div > div { background: var(--steam-blue) 
 .vval {
     font-size: 21px; font-weight: 700; color: #e6f0f9;
     line-height: 1.25; white-space: nowrap;
+    /* 🔴 와 「이탈 유력」 의 세로 가운데를 맞춘다.
+       그냥 두면 이모지가 글씨보다 크고 베이스라인이 달라 위로 뜬다. */
+    display: flex; align-items: center; gap: 7px;
 }
+.vval .dot { font-size: 14px; line-height: 1; flex: none; }
 .vval.mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
 .vsub { font-size: 10.5px; color: var(--steam-text-muted); margin-top: 1px; }
 
+/* 이 화면의 핵심 문장이다 — "글이 확률을 N%p 밀었다".
+   13px 이면 옆의 판정 칸(21px)에 묻혀서 눈이 안 간다. */
 .textgap {
-    font-size: 13px; color: #c7d5e0;
+    font-size: 15.5px; line-height: 1.5; color: #dbe6f0;
     background: rgba(15,23,32,.5);
     border: 1px solid var(--steam-navy-light);
-    border-radius: 8px; padding: 10px 14px; margin: 4px 0 12px;
+    border-radius: 8px; padding: 12px 15px; margin: 4px 0 12px;
 }
 .textgap span {
-    display: block; font-size: 11px; color: var(--steam-text-muted); margin-top: 3px;
+    display: block; font-size: 11.5px; color: var(--steam-text-muted); margin-top: 5px;
+    line-height: 1.45;
 }
 
 .mnote {

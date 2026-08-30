@@ -141,7 +141,9 @@ with right:
         st.markdown(
             f'<div class="verdicts">'
             f'  <div class="vbox"><div class="vlab">판정</div>'
-            f'    <div class="vval">{icon} {msg}</div></div>'
+            # 아이콘을 span 으로 감싼다. 한 덩어리 글로 두면 이모지가 글씨보다
+            # 크고 베이스라인도 달라서 위로 뜬다. 감싸야 flex 로 가운데를 맞출 수 있다.
+            f'    <div class="vval"><span class="dot">{icon}</span>{msg}</div></div>'
             f'  <div class="vbox"><div class="vlab">판정 기준선</div>'
             f'    <div class="vval mono">{thr:.1%}</div>'
             f'    <div class="vsub">0.5 가 아니라 데이터로 고른 값</div></div>'
