@@ -65,7 +65,7 @@ left, right = st.columns(2, gap="large")
 # ── 왼쪽 : 입력 ─────────────────────────────────────────────────
 with left:
     review = st.text_area(
-        "리뷰 본문 (영어)", height=260,
+        "리뷰 본문 (영어)", height=120,
         value="Refunded after 2 hours. The tutorial is confusing and the controls feel awful.",
         help="스팀에 없는 리뷰를 직접 지어내도 됩니다. 모델이 글을 읽습니다.",
     )
