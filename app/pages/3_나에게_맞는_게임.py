@@ -55,7 +55,9 @@ generous = c6.radio("평가는 후한 편인가요?",
 n_cat = len(CAT) if CAT is not None else len(GAMES)
 have = st.multiselect(
     "이미 갖고 있는 게임 (추천에서 제외됩니다)",
-    (CAT.game.tolist() if CAT is not None else GAMES.game.tolist()),
+    # 이름순으로 정렬한다 — 화면 4 와 같은 규칙. 목록이 1,500개라
+    # 리뷰 많은 순으로 두면 찾으려는 게임이 어디 있는지 알 수가 없다
+    sorted(CAT.game.tolist() if CAT is not None else GAMES.game.tolist()),
     placeholder="게임 이름을 입력해 고르세요",
     help=f"스팀 전체가 아니라 **리뷰가 많은 상위 {n_cat}개**만 담고 있습니다")
 st.caption(f"※ 스팀 전체 게임이 아니라 **누적 리뷰가 많은 순으로 {n_cat}개**만 다룹니다. "
