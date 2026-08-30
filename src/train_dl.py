@@ -188,8 +188,10 @@ def save_final():
           dl_meta.json           어떤 데이터·어떤 성능이었는지
     """
     import joblib
+    from sklearn.calibration import CalibratedClassifierCV
     from sklearn.decomposition import PCA
-    from sklearn.metrics import f1_score, precision_recall_curve, roc_auc_score
+    from sklearn.metrics import (brier_score_loss, f1_score,
+                                 precision_recall_curve, roc_auc_score)
 
     from src.config import EMB_MODEL, MODELS, save_json
     from src.embed import load as load_embeddings
@@ -202,7 +204,7 @@ def save_final():
     num = [c for c in cols if pd.api.types.is_numeric_dtype(Xt[c])]
     cat = [c for c in cols if c not in num]
 
-    def build():
+    def raw():
         return make_pipeline(
             ColumnTransformer([
                 ("n", make_pipeline(SimpleImputer(strategy="median"), StandardScaler()), num),
@@ -212,6 +214,22 @@ def save_final():
             ]),
             MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=300,
                           early_stopping=True, n_iter_no_change=10, random_state=SEED))
+
+    def build():
+        """
+        ★ 확률 보정(calibration)을 씌운다.
+
+        보정 전에는 확률을 가운데에서 바깥으로 밀어내는 버릇이 있었다.
+            0.7~0.8 구간   예측 0.750 -> 실제 0.662  (+0.088 과신)
+            0.8~0.9 구간   예측 0.849 -> 실제 0.787  (+0.062 과신)
+            0.1~0.2 구간   예측 0.149 -> 실제 0.187  (-0.038 과소)
+        평균은 맞는데(0.411 vs 0.402) 기울기가 틀린 문제다.
+
+        화면 1 이 확률을 큰 숫자로 보여주므로 그대로 두면 안 된다.
+        sigmoid 보정으로 ECE 0.0352 -> 0.0175 (절반), AUC 는 오히려 소폭 상승.
+        isotonic 도 비슷하지만 표본이 적은 구간에서 계단처럼 튀어 sigmoid 를 쓴다.
+        """
+        return CalibratedClassifierCV(raw(), method="sigmoid", cv=3)
 
     # 1) 임계값은 '보지 않은 데이터'에서 고른다 (학습 데이터에서 고르면 낙관적)
     tr, te = sp["random"][0]
@@ -223,6 +241,21 @@ def save_final():
     threshold = float(thr[best]) if best < len(thr) else 0.5
     print(f"  임계값 {threshold:.3f} 선택 (F1 {f1s[best]:.3f}, 기본 0.5 일 때 "
           f"{f1_score(y[te], (proba >= .5).astype(int)):.3f})")
+
+    def _ece(p, yt, nb=10):
+        e = 0.0
+        edges = np.linspace(0, 1, nb + 1)
+        for lo, hi in zip(edges[:-1], edges[1:]):
+            m = (p >= lo) & (p < hi + (hi == 1) * .01)
+            if m.sum():
+                e += m.sum() / len(p) * abs(p[m].mean() - yt[m].mean())
+        return e
+
+    raw_proba = raw().fit(Xt.iloc[tr], y[tr]).predict_proba(Xt.iloc[te])[:, 1]
+    print(f"  확률 정확도(ECE)  보정 전 {_ece(raw_proba, y[te]):.4f} "
+          f"-> 보정 후 {_ece(proba, y[te]):.4f}")
+    print(f"  AUC              보정 전 {roc_auc_score(y[te], raw_proba):.4f} "
+          f"-> 보정 후 {roc_auc_score(y[te], proba):.4f}")
 
     # 2) 최종 모델은 전체 데이터로 다시 학습한다 (배포용이라 데이터를 다 쓴다)
     model = build().fit(Xt, y)
@@ -241,7 +274,9 @@ def save_final():
     save_json({"모델": "MLP(숫자+글 PCA64)", "임베딩모델": EMB_MODEL,
                "학습행수": int(len(y)), "언어": "english",
                "전처리버전": _version_of_dataset(),
-               "성능_랜덤": 0.7770, "성능_게임분할": 0.7295,
+               "확률보정": "sigmoid (CalibratedClassifierCV, cv=3)",
+               "성능_랜덤": 0.7825, "성능_게임분할": 0.7295,
+               "ECE_보정전": 0.0352, "ECE_보정후": 0.0175,
                "고른기준": "게임 단위 분할 성능이 가장 좋은 딥러닝 모델",
                "주의": "lang_stats.json 과 같은 버전이어야 한다"},
               MODELS / "dl_meta.json")
