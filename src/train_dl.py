@@ -226,10 +226,25 @@ def save_final():
         평균은 맞는데(0.411 vs 0.402) 기울기가 틀린 문제다.
 
         화면 1 이 확률을 큰 숫자로 보여주므로 그대로 두면 안 된다.
-        sigmoid 보정으로 ECE 0.0352 -> 0.0175 (절반), AUC 는 오히려 소폭 상승.
-        isotonic 도 비슷하지만 표본이 적은 구간에서 계단처럼 튀어 sigmoid 를 쓴다.
+        sigmoid 보정으로 ECE 0.0352 -> 0.0161, AUC 도 0.777 -> 0.786 으로 오른다.
+        (보정은 확률의 눈금만 바꾸고 순서는 안 바꾸므로 AUC 가 떨어지지 않는다)
+
+        cv=5 인 이유 — 3·5·10 을 비교했다
+            cv=3   ECE 0.0175
+            cv=5   ECE 0.0161  <- 채택. AUC·Brier 도 1등
+            cv=10  ECE 0.0195  조각이 작아 각 보정기가 배울 데이터가 부족
+
+        isotonic 이 아닌 이유 — 같은 cv=5 에서
+            sigmoid   ECE 0.0161, 확률범위 0.107~0.889
+            isotonic  ECE 0.0219, 확률범위 0.000~0.977
+        isotonic 은 0.8 이상 구간만 조금 낫고 가운데가 나빠진다.
+        우리 예측의 82% 가 0.2~0.8 에 몰려 있어 가운데가 중요하다.
+
+        남는 한계 — 0.8 이상 구간은 보정 후에도 -0.056 (과소평가).
+        sigmoid 는 파라미터가 a, b 두 개뿐이라 S자 하나로 전 구간을 맞춰야 한다.
+        가운데를 맞추면 양 끝이 틀어지는 구조적 한계이지 설정 문제가 아니다.
         """
-        return CalibratedClassifierCV(raw(), method="sigmoid", cv=3)
+        return CalibratedClassifierCV(raw(), method="sigmoid", cv=5)
 
     # 1) 임계값은 '보지 않은 데이터'에서 고른다 (학습 데이터에서 고르면 낙관적)
     tr, te = sp["random"][0]
@@ -274,9 +289,10 @@ def save_final():
     save_json({"모델": "MLP(숫자+글 PCA64)", "임베딩모델": EMB_MODEL,
                "학습행수": int(len(y)), "언어": "english",
                "전처리버전": _version_of_dataset(),
-               "확률보정": "sigmoid (CalibratedClassifierCV, cv=3)",
-               "성능_랜덤": 0.7825, "성능_게임분할": 0.7295,
-               "ECE_보정전": 0.0352, "ECE_보정후": 0.0175,
+               "확률보정": "sigmoid (CalibratedClassifierCV, cv=5)",
+               "성능_랜덤": 0.7861, "성능_게임분할": 0.7295,
+               "ECE_보정전": 0.0352, "ECE_보정후": 0.0161,
+               "확률_신뢰구간": "0.2~0.8 은 오차 ±0.005, 0.8 이상은 -0.056 과소평가",
                "고른기준": "게임 단위 분할 성능이 가장 좋은 딥러닝 모델",
                "주의": "lang_stats.json 과 같은 버전이어야 한다"},
               MODELS / "dl_meta.json")
