@@ -1075,3 +1075,16 @@ div[data-testid="stMultiSelect"] div[role="group"] [class*="placeholder"] {
 .grid td, .grid th.qn { width: auto; }
 
 /* custom css 추가 */
+
+/* ── 화면 2 : DB 누적 통계 띠 ─────────────────────────────────
+   한 사람의 점수만으로는 "사람이 못 맞힌다" 가 우연인지 알 수 없다.
+   누적 평균이 쌓여야 주장이 근거를 갖는다. DB 를 쓰는 이유가 이것이다. */
+.dbstat {
+    background: rgba(102,192,244,.07);
+    border: 1px solid rgba(102,192,244,.22);
+    border-left: 3px solid var(--steam-blue);
+    border-radius: 8px; padding: 10px 15px; margin: 2px 0 14px;
+    font-size: 14px; color: #dbe6f0;
+}
+.dbstat b { color: var(--steam-blue); font-size: 16px; }
+.dbstat span { color: var(--steam-text-muted); font-size: 12px; }

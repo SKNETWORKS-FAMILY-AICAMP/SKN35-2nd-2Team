@@ -11,6 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from app._shared import get_all, page
+from app import _db
 
 _, _, CARDS, _, META, _ = get_all()
 THR = float(META["임계값"])  # 0.5 가 아니다 — 데이터로 고른 판정 기준
@@ -20,8 +21,66 @@ page("🆚 사람 vs 모델",
      f"리뷰 {N}장을 보고 이 사람이 게임을 계속했을지 맞혀보세요. 모델과 점수를 비교합니다.")
 
 ss = st.session_state
-for k, v in [("i", 0), ("me", 0), ("ai", 0), ("log", []), ("shown", False)]:
+for k, v in [("i", 0), ("me", 0), ("ai", 0), ("log", []), ("shown", False),
+             ("참가자", None), ("저장됨", None)]:
     ss.setdefault(k, v)
+
+
+def 누적통계():
+    """지금까지 몇 명이 풀었는지. DB 가 없으면 아무것도 안 그린다.
+
+    이 화면의 주장은 "사람은 이 문제를 잘 못 맞힌다" 인데,
+    한 사람의 점수만으로는 그게 우연인지 알 수 없다.
+    누적 평균이 쌓여야 주장이 근거를 갖는다. DB 를 쓰는 이유가 이것이다.
+    """
+    s = _db.통계(ss.get("저장카운터", 0))
+    if not s:
+        return
+    st.markdown(
+        f'<div class="dbstat">지금까지 <b>{s["참가자수"]}명</b>이 풀었습니다 &nbsp;·&nbsp; '
+        f'사람 평균 <b>{s["사람평균"]:.1f}</b> &nbsp;vs&nbsp; '
+        f'모델 평균 <b>{s["모델평균"]:.1f}</b> <span>(각 {N}문제 중)</span></div>',
+        unsafe_allow_html=True)
+
+
+# ── 시작 전 : 참가자 입력 ───────────────────────────────────────
+# 실명·연락처는 받지 않는다. 발표장에서 받은 개인정보를 보관할 이유가 없고
+# 분석에도 쓸모가 없다. 여기서 받는 것은 전부 "어떤 사람이 잘 맞히나" 를
+# 나눠 볼 축이다. 전부 선택이라 그냥 시작해도 된다.
+if ss.참가자 is None and not ss.log:
+    누적통계()
+    # ★ 폼 key 를 "참가자" 로 두면 안 된다.
+    #   ss.참가자 를 우리가 직접 대입하는데, 같은 이름의 위젯 key 가 있으면
+    #   스트림릿이 "위젯 값은 session_state 로 못 바꾼다" 며 막는다.
+    with st.form("참가자입력폼"):
+        st.markdown("##### 참여자 정보 *(선택 — 안 쓰고 바로 시작해도 됩니다)*")
+        c1, c2 = st.columns(2)
+        닉 = c1.text_input("닉네임", max_chars=20, placeholder="비워두면 익명")
+        연령 = c2.selectbox("연령대", ["선택 안 함", "10대", "20대", "30대", "40대 이상"])
+        c3, c4 = st.columns(2)
+        시간 = c3.selectbox("주당 게임 시간",
+                          ["선택 안 함", "거의 안 함", "5시간 미만", "5~20시간", "20시간 이상"])
+        경력 = c4.selectbox("스팀 이용 기간",
+                          ["선택 안 함", "안 씀", "1년 미만", "1~5년", "5년 이상"])
+
+        b1, b2 = st.columns(2)
+        시작 = b1.form_submit_button("입력하고 시작", width="stretch", type="primary")
+        건너 = b2.form_submit_button("그냥 시작", width="stretch")
+
+        if 시작 or 건너:
+            빈값 = lambda v: None if (not v or v == "선택 안 함") else v
+            ss.참가자 = {} if 건너 else {
+                "닉네임": 빈값(닉), "연령대": 빈값(연령),
+                "게임시간": 빈값(시간), "스팀경력": 빈값(경력)}
+            st.rerun()
+
+    if _db.연결됨():
+        st.caption("입력한 내용은 퀴즈가 끝나면 팀 DB(TiDB)에 저장됩니다. "
+                   "실명·연락처는 받지 않습니다.")
+    else:
+        st.caption("⚠️ 지금은 DB에 연결되어 있지 않습니다. 퀴즈는 그대로 풀 수 있고, "
+                   "기록만 저장되지 않습니다.")
+    st.stop()
 
 # 진행 상태를 세는 기준은 "답한 문제 수" 하나뿐이다.
 # ss.i(현재 위치)와 섞어 쓰면 정답 공개 중에 하나씩 어긋난다.
@@ -84,12 +143,35 @@ if ss.i >= N:
 
     st.caption(f"같은 {N}문제를 각자 푼 결과입니다. 두 점수를 더하는 것이 아닙니다. "
                f"동전 던지기로 찍으면 평균 {N / 2:.0f}개를 맞힙니다.")
-    
-    st.dataframe(pd.DataFrame(ss.log), width="stretch", hide_index=True)
+
+    # ── DB 저장 ────────────────────────────────────────────────
+    # 한 번만 시도한다. ss.저장됨 이 None 일 때만 들어온다.
+    # 실패해도 화면은 그대로 간다 — 결과는 이미 위에 다 나와 있다.
+    if ss.저장됨 is None:
+        ss.저장됨 = _db.저장(ss.참가자 or {}, ss.me, ss.ai, ss.log)
+        if ss.저장됨:
+            # 방금 넣은 내 기록이 누적 통계에 잡히도록 캐시를 깬다
+            ss.저장카운터 = ss.get("저장카운터", 0) + 1
+
+    if ss.저장됨:
+        st.success("기록이 저장되었습니다. 아래 누적 통계에 이번 판이 포함되어 있습니다.",
+                   icon="💾")
+    elif _db.연결됨():
+        st.warning("저장에 실패했습니다. 결과는 화면에 그대로 있습니다.", icon="⚠️")
+
+    누적통계()
+
+    st.dataframe(pd.DataFrame(ss.log).drop(columns=["_확률"], errors="ignore"),
+                 width="stretch", hide_index=True)
 
     c = st.columns([2, 1, 2])[1]
     if c.button("다시 풀기", width="stretch"):
-        for k in ["i", "me", "ai", "log", "shown"]:
+        # 참가자 정보는 남긴다 — 같은 사람이 한 번 더 풀 때 또 입력시키지 않는다.
+        for k in ["i", "me", "ai", "log", "shown", "저장됨"]:
+            ss.pop(k, None)
+        st.rerun()
+    if st.button("다른 사람이 풀기 (정보 다시 입력)", width="stretch"):
+        for k in ["i", "me", "ai", "log", "shown", "저장됨", "참가자"]:
             ss.pop(k, None)
         st.rerun()
     st.stop()
@@ -140,6 +222,8 @@ if not ss.shown:
             "결과": ("둘 다 정답" if pick == truth == ai else
                     "나만 정답" if pick == truth else
                     "모델만 정답" if ai == truth else "둘 다 오답"),
+            # DB 에 넣을 원값. 화면 표에서는 빼고 보여준다("모델 확률"이 이미 있다).
+            "_확률": round(float(card["_p"]), 4),
         })
         ss.shown = True
         st.rerun()
