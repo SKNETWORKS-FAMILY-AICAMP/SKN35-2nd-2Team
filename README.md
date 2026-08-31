@@ -36,10 +36,10 @@
       <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
     </tr>
     <tr>
-      <td align="center">머신러닝 / 데이터 전처리</td>
-      <td align="center">데이터 수집·전처리 / 화면 구현 / 발표</td>
-      <td align="center">대장 / 화면 구현 / DB 설계 / 배포</td>
-      <td align="center">딥러닝 / 데이터 전처리</td>
+      <td align="center"><b>팀장</b><br/>머신러닝<br/>데이터 전처리</td>
+      <td align="center">데이터 수집·전처리<br/>화면 구현<br/>발표</td>
+      <td align="center">대장<br/>화면 구현<br/>DB 설계<br/>배포</td>
+      <td align="center">딥러닝<br/>데이터 전처리</td>
     </tr>
   </tbody>
 </table>
