@@ -1,9 +1,3 @@
-<div align="center">
-  <img src="./docs/image/team.png" width="100%" alt="S팀" />
-</div>
-
-<br />
-
 # 1. 팀 소개
 
 ## 📌 팀명
@@ -13,6 +7,11 @@
 <br />
 
 ## 📌 팀 멤버
+<div align="center">
+  <img src="./docs/image/team.png" width="70%" alt="S팀" />
+</div>
+
+<br />
 
 <table>
   <thead>
