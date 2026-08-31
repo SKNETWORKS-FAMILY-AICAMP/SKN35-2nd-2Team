@@ -29,8 +29,8 @@
     <tr>
       <td align="center"><img src="./docs/image/1.png" width="130" alt="손채영" /></td>
       <td align="center"><img src="./docs/image/2.png" width="130" alt="차윤정" /></td>
-      <td align="center"><img src="./docs/image/3.png" width="130" alt="이태호" /></td>
-      <td align="center"><img src="./docs/image/4.png" width="130" alt="우성찬" /></td>
+      <td align="center"><img src="./docs/image/3.png" width="130" alt="이형민" /></td>
+      <td align="center"><img src="./docs/image/4.png" width="130" alt="최우석" /></td>
     </tr>
     <tr>
       <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
@@ -55,7 +55,7 @@
 
 ## 📌 프로젝트 명
 
-### 이 리뷰는 작별 인사인가? — 스팀 게임 리뷰 기반 유저 이탈 예측
+### 스팀 게임 리뷰 기반 유저 이탈 예측
 
 ## 📌 프로젝트 소개
 
@@ -65,10 +65,21 @@
 
 ## 📌 프로젝트 필요성(배경)
 
-- 국내에 개인 단위 고객 이탈 실데이터는 개인정보 문제로 사실상 공개되지 않습니다. 스팀 리뷰는 **공개 API로 오늘 자 실데이터**를 받을 수 있는 몇 안 되는 창구입니다.
-- 기존 이탈 예측은 대부분 **사람의 속성**(나이·성별·거래 내역)을 봅니다. 저희는 **행동 기록과 본인이 쓴 글**을 봅니다.
-- 게임사 입장에서 이탈은 매출과 직결되지만, 어떤 유저가 떠날지는 리뷰 한 건만으로 판단하기 어렵습니다.
-- "리뷰에 쓴 말이 실제로 이탈 예측에 도움이 되는가"는 아직 명확히 검증되지 않은 질문입니다.
+> **"세일이라서 샀는데, 엔딩도 못 보고 접었어요. 이런 게 한두 개가 아니에요."**
+
+스팀 라이브러리에는 사놓고 안 하는 게임이 쌓여 있습니다. 세일이라서, 평이 좋아서, 친구가 한다고 해서 샀는데 몇 시간 하고 덮어둔 게임들입니다. 환불 기간이 지나면 되돌릴 수도 없습니다.
+
+**유저 입장**
+
+- 게이머가 실제로 하는 계산은 "재밌을까"가 아니라 **"시간당 얼마냐"** 입니다. 같은 값이라도 오래 할 게임과 금방 접을 게임은 체감 가격이 전혀 다릅니다.
+- 그런데 **내가 이 게임을 얼마나 할 사람인지**는 사보기 전에 알 수 없습니다. 평점과 리뷰는 남의 이야기지 내 이야기가 아닙니다.
+- 사기 전에 알 수 있다면 낭비를 줄일 수 있습니다.
+
+**게임사 입장**
+
+- 신규 유저를 모으는 것만큼 **이미 산 사람이 계속하게 만드는 일**이 중요합니다.
+- 그런데 게임마다 사람을 잃는 지점이 다릅니다. **초반에 잃는 게임과 후반에 잃는 게임은 처방이 갈립니다.** 앞은 튜토리얼과 진입 난이도, 뒤는 콘텐츠 분량 문제입니다.
+- 어떤 유저가 언제 떠나는지 알 수 있다면, 어디를 손봐야 하는지도 정해집니다.
 
 ## 📌 프로젝트 목표
 
@@ -123,7 +134,7 @@
   </tr>
   <tr>
     <th>Backend &amp; DB</th>
-    <td><img src="https://img.shields.io/badge/Python_3.12-3670A0?style=flat-square&logo=python&logoColor=ffdd54"/> <img src="https://img.shields.io/badge/SQLAlchemy-D71F00?style=flat-square&logo=sqlalchemy&logoColor=white"/> <img src="https://img.shields.io/badge/PyMySQL-4479A1?style=flat-square&logo=mysql&logoColor=white"/> <img src="https://img.shields.io/badge/TiDB_Cloud-ED1C24?style=flat-square&logo=tidb&logoColor=white"/></td>
+    <td><img src="https://img.shields.io/badge/Python_3.12-3670A0?style=flat-square&logo=python&logoColor=ffdd54"/> <img src="https://img.shields.io/badge/PyMySQL-4479A1?style=flat-square&logo=mysql&logoColor=white"/> <img src="https://img.shields.io/badge/TiDB_Cloud-ED1C24?style=flat-square&logo=tidb&logoColor=white"/></td>
   </tr>
   <tr>
     <th>Machine Learning</th>
@@ -281,23 +292,3 @@ uv run streamlit run app/main.py     # 화면 실행
 | 발표 자료 | [docs/03_발표_딥러닝파트.pptx](docs/03_발표_딥러닝파트.pptx) |
 
 <br />
-
-# 8. 한줄 회고
-
-<!-- TODO: 각자 한 줄씩 채워주세요 -->
-
-## 손채영
-
->
-
-## 차윤정
-
->
-
-## 이태호
-
->
-
-## 우성찬
-
->
