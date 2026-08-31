@@ -17,13 +17,27 @@ dependencies = [
     "streamlit>=1.62.0",
     "plotly>=7.0.0",
     "imbalanced-learn>=0.14.2",
-    "autogluon-tabular>=1.6.1",
-    "autogluon-multimodal>=1.6.1",
     "pydeck>=0.9.3",
     "streamlit-autorefresh>=1.0.1",
     # DB (화면 2 퀴즈 기록 · TiDB = MySQL 호환)
     "sqlalchemy>=2.0",
     "pymysql>=1.1",
+]
+
+# ── 실험용 — 배포에는 들어가지 않는다 ────────────────────────────
+# AutoGluon 은 src/auto.py 벤치마크에서만 쓴다. 화면(app/)은 import 하지 않는다.
+# 그런데 기본 의존성에 두면 배포가 ray·lightning·timm 까지 101개를 더 깔아야 해서
+# Streamlit Cloud 가 무게를 못 견딘다. 그래서 선택 항목으로 뺐다.
+#
+#     uv sync                      # 평소 · 화면 · 배포     137개
+#     uv sync --extra benchmark    # 벤치마크 다시 돌릴 때   238개
+#
+# 이름이 영어인 이유 — 파이썬 패키징 표준(PEP 685)이 extra 이름을
+# 영문·숫자·-·_·. 로 제한한다. "실험" 은 파서가 거부한다.
+[project.optional-dependencies]
+benchmark = [
+    "autogluon-tabular>=1.6.1",
+    "autogluon-multimodal>=1.6.1",
 ]
 
 [tool.uv]

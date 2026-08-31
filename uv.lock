@@ -2917,8 +2917,6 @@ name = "steam-churn"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "autogluon-multimodal" },
-    { name = "autogluon-tabular" },
     { name = "imbalanced-learn" },
     { name = "ipykernel" },
     { name = "joblib" },
@@ -2938,10 +2936,16 @@ dependencies = [
     { name = "xgboost" },
 ]
 
+[package.optional-dependencies]
+benchmark = [
+    { name = "autogluon-multimodal" },
+    { name = "autogluon-tabular" },
+]
+
 [package.metadata]
 requires-dist = [
-    { name = "autogluon-multimodal", specifier = ">=1.6.1" },
-    { name = "autogluon-tabular", specifier = ">=1.6.1" },
+    { name = "autogluon-multimodal", marker = "extra == 'benchmark'", specifier = ">=1.6.1" },
+    { name = "autogluon-tabular", marker = "extra == 'benchmark'", specifier = ">=1.6.1" },
     { name = "imbalanced-learn", specifier = ">=0.14.2" },
     { name = "ipykernel" },
     { name = "joblib" },
@@ -2960,6 +2964,7 @@ requires-dist = [
     { name = "streamlit-autorefresh", specifier = ">=1.0.1" },
     { name = "xgboost" },
 ]
+provides-extras = ["benchmark"]
 
 [[package]]
 name = "stevedore"
