@@ -1,242 +1,276 @@
-# 스팀 리뷰 이탈 예측
+<!-- TODO: 팀 배너 이미지를 docs/image/ 에 넣고 아래 주석을 푸세요
+<div align="center">
+  <img src="./docs/image/team-banner.png" width="100%" alt="팀 배너" />
+</div>
+-->
 
-**주제** 게임 리뷰를 쓴 그 순간, 이 사람이 게임을 계속할지 그만둘지 맞히기
-**발표** 2026-08-31
+<br />
 
----
+# 1. 팀 소개
 
-## 환경 세팅
+## 📌 팀명
 
-패키지 관리는 [uv](https://docs.astral.sh/uv/)를 씁니다. **맥·윈도우 명령이 같습니다.**
+<h1 align="center">🎮 SKN35-2nd-2Team : S팀 🎮</h1>
 
-```bash
-uv sync
+<br />
+
+## 📌 팀 멤버
+
+<table>
+  <thead>
+    <tr>
+      <th align="center">차윤정</th>
+      <th align="center">이형민</th>
+      <th align="center">최우석</th>
+      <th align="center">손채영</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center"><img src="./docs/image/2.png" width="130" alt="차윤정" /></td>
+      <td align="center"><img src="./docs/image/3.png" width="130" alt="이형민" /></td>
+      <td align="center"><img src="./docs/image/4.png" width="130" alt="최우석" /></td>
+      <td align="center"><img src="./docs/image/1.png" width="130" alt="손채영" /></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="https://github.com/YOONJUNG">@YOONJUNG</a></td>
+      <td align="center"><a href="https://github.com/tommylee9068">@tommylee9068</a></td>
+      <td align="center"><a href="https://github.com/wsc9150">@wsc9150</a></td>
+      <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
+    </tr>
+    <tr>
+      <td align="center">머신러닝</td>
+      <td align="center">데이터 수집·전처리 / 화면</td>
+      <td align="center">대장 / 화면 / DB</td>
+      <td align="center">딥러닝</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- TODO: 이름·역할·팀장 표기를 확인해 주세요. 프로필 이미지는 docs/image/ 에 넣습니다 -->
+
+<br />
+
+# 2. 프로젝트 개요
+
+## 📌 프로젝트 명
+
+### 스팀 게임 리뷰 기반 유저 이탈 예측
+
+## 📌 프로젝트 소개
+
+게임 리뷰를 쓴 **그 순간의 정보만으로**, 이 사람이 게임을 계속할지 그만둘지 맞히는 서비스입니다.
+
+스팀 공개 API에서 리뷰를 직접 수집하고, 플레이 시간·보유 게임 수 같은 **행동 기록**과 사용자가 직접 쓴 **리뷰 글**을 함께 학습시켰습니다. 머신러닝(부스팅 계열)과 딥러닝(언어모델 임베딩)을 같은 조건에서 비교하고, 결과를 Streamlit 화면 5개로 제공합니다.
+
+## 📌 프로젝트 필요성(배경)
+
+> **"세일이라서 샀는데, 엔딩도 못 보고 접었어요. 이런 게 한두 개가 아니에요."**
+
+스팀 라이브러리에는 사놓고 안 하는 게임이 쌓여 있습니다. 세일이라서, 평이 좋아서, 친구가 한다고 해서 샀는데 몇 시간 하고 덮어둔 게임들입니다. 환불 기간이 지나면 되돌릴 수도 없습니다.
+
+**유저 입장**
+
+- 게이머가 실제로 하는 계산은 "재밌을까"가 아니라 **"시간당 얼마냐"** 입니다. 같은 값이라도 오래 할 게임과 금방 접을 게임은 체감 가격이 전혀 다릅니다.
+- 그런데 **내가 이 게임을 얼마나 할 사람인지**는 사보기 전에 알 수 없습니다. 평점과 리뷰는 남의 이야기지 내 이야기가 아닙니다.
+- 사기 전에 알 수 있다면 낭비를 줄일 수 있습니다.
+
+**게임사 입장**
+
+- 신규 유저를 모으는 것만큼 **이미 산 사람이 계속하게 만드는 일**이 중요합니다.
+- 그런데 게임마다 사람을 잃는 지점이 다릅니다. **초반에 잃는 게임과 후반에 잃는 게임은 처방이 갈립니다.** 앞은 튜토리얼과 진입 난이도, 뒤는 콘텐츠 분량 문제입니다.
+- 어떤 유저가 언제 떠나는지 알 수 있다면, 어디를 손봐야 하는지도 정해집니다.
+
+## 📌 프로젝트 목표
+
+1. 비즈니스 문제를 이해하고 이탈 예방을 위한 머신러닝 활용 계획을 수립합니다.
+2. 스팀 공개 API로 데이터를 직접 수집하고, 정답(라벨)을 정의·검증합니다.
+3. 데이터 누수를 차단하고 전처리·특징공학을 수행합니다.
+4. 머신러닝 5종을 학습·튜닝하고 최적 모델을 선정합니다.
+5. 딥러닝으로 리뷰 글을 학습시켜 **"글이 예측에 도움이 되는가"** 를 검증합니다.
+6. 두 가지 분할(랜덤 / 게임 단위)로 평가해 **모델이 게임 이름을 외웠는지** 확인합니다.
+7. Streamlit과 TiDB Cloud를 연동해 예측 결과를 체험할 수 있는 화면을 구현합니다.
+
+## 📌 데이터 소개
+
+### 1) 데이터 출처
+
+- 출처: [Steam 리뷰 공개 API](https://partner.steamgames.com/doc/store/getreviews) — API 키·회원가입 불필요
+- 수집: 2026-08-25 07:30 UTC · 게임 60개 × 리뷰
+- 크기: **139,667행 × 28컬럼** · 30개 언어 · 결측 없음
+
+**게임 60개 선정 기준** — 장르 / 출시시기 / 평가등급 / 가격 / 리뷰 볼륨 5개 축으로 격자를 만들어 골고루 뽑았습니다. 리뷰가 너무 많은 초대형 게임(CS2 등)은 6개월 전 데이터에 도달할 수 없어 제외했습니다.
+
+### 2) 정답(라벨) 정의
+
+```
+리뷰 후 추가 플레이 = 지금까지 총 플레이 − 리뷰 쓸 때까지 플레이
+
+  1시간 미만  →  이탈 (1)
+  1시간 이상  →  잔존 (0)
+
+단, 리뷰를 쓴 지 180일 이상 지난 것만 사용
 ```
 
-이 한 줄이면 파이썬 3.12와 모든 패키지가 `uv.lock`에 박힌 **정확히 같은 버전**으로 깔립니다.
-가상환경을 activate 할 필요 없이 `uv run`을 앞에 붙여서 실행합니다.
+180일 기준은 데이터가 정했습니다. 최근 리뷰일수록 이탈률이 부풀려지는데(0~30일 46.6%), 180일을 넘기면 평평해집니다.
 
-```bash
-uv run python src/config.py     # 설정 확인
-uv run jupyter lab              # 노트북
+### 3) 전처리 데이터
+
+전처리 결과는 `data/processed/dataset.csv`로 저장합니다. **139,658행 × 30컬럼**, 이탈률 **41.1%**.
+
+- 물리적으로 불가능한 행 9건 제거 (추가 플레이가 음수)
+- **보유 게임 수 0 (51.5%)** → 실제로는 프로필 비공개. `is_private` 플래그로 분리
+- 리뷰 길이를 **언어별로 보정** (한국어 15자 = 영어 57자)
+- **데이터 누수 컬럼 8개 제거** — 리뷰 작성 시점 이후의 정보
+
+<br />
+
+# 3. 기술 스택
+
+<table>
+  <tr>
+    <th>Frontend</th>
+    <td><img src="https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white"/> <img src="https://img.shields.io/badge/Plotly-3F4F75?style=flat-square&logo=plotly&logoColor=white"/></td>
+  </tr>
+  <tr>
+    <th>Backend &amp; DB</th>
+    <td><img src="https://img.shields.io/badge/Python_3.12-3670A0?style=flat-square&logo=python&logoColor=ffdd54"/> <img src="https://img.shields.io/badge/PyMySQL-4479A1?style=flat-square&logo=mysql&logoColor=white"/> <img src="https://img.shields.io/badge/TiDB_Cloud-ED1C24?style=flat-square&logo=tidb&logoColor=white"/></td>
+  </tr>
+  <tr>
+    <th>Machine Learning</th>
+    <td><img src="https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white"/> <img src="https://img.shields.io/badge/Pandas-150458?style=flat-square&logo=pandas&logoColor=white"/> <img src="https://img.shields.io/badge/scikit--learn-F7931E?style=flat-square&logo=scikitlearn&logoColor=white"/> <img src="https://img.shields.io/badge/XGBoost-337AB7?style=flat-square&logo=xgboost&logoColor=white"/> <img src="https://img.shields.io/badge/LightGBM-02569B?style=flat-square"/> <img src="https://img.shields.io/badge/SHAP-000000?style=flat-square"/></td>
+  </tr>
+  <tr>
+    <th>Deep Learning</th>
+    <td><img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white"/> <img src="https://img.shields.io/badge/Sentence--Transformers-FFD21E?style=flat-square&logo=huggingface&logoColor=black"/> <img src="https://img.shields.io/badge/AutoGluon-1B7FBD?style=flat-square&logo=amazonaws&logoColor=white"/> <img src="https://img.shields.io/badge/Google_Colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white"/></td>
+  </tr>
+  <tr>
+    <th>Infra &amp; 협업</th>
+    <td><img src="https://img.shields.io/badge/uv-DE5FE9?style=flat-square&logo=astral&logoColor=white"/> <img src="https://img.shields.io/badge/Git-F05032?style=flat-square&logo=git&logoColor=white"/> <img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white"/> <img src="https://img.shields.io/badge/Notion-000000?style=flat-square&logo=notion&logoColor=white"/></td>
+  </tr>
+</table>
+
+<br />
+
+# 4. 시스템 아키텍처
+
+<!-- TODO: 아키텍처 그림을 docs/image/ 에 넣고 아래 주석을 푸세요
+<div align="center">
+  <img src="./docs/image/architecture.png" width="100%" alt="시스템 아키텍처" />
+</div>
+-->
+
+```
+[ 스팀 공개 API ]
+        │  collect.py  (게임 60개 · 139,667행 · 175초)
+        ▼
+[ data/raw/steam_raw.csv ]
+        │  preprocess.py  (라벨 생성 · 누수 차단 · 파생 변수)
+        ▼
+[ data/processed/dataset.csv ]  139,658행 × 30열
+        │
+        ├─────────────┬──────────────────┐
+        ▼             ▼                  ▼
+  [ 머신러닝 ]    [ 딥러닝 ]        [ embed.py ]
+  train_ml.py    train_dl.py       리뷰 → 384차원 임베딩
+  tune_ml.py     (MLP + 임베딩)     (all-MiniLM-L6-v2)
+        │             │
+        └──────┬──────┘
+               ▼
+        [ models/ ]  ml_* · dl_* · shap_*
+               │
+               ▼
+        [ Streamlit 화면 5개 ]  ──  [ TiDB Cloud ]
+          src/predict.py             화면 2 퀴즈 기록
 ```
 
-| 상황 | 명령 |
-|---|---|
-| uv가 없다 (맥) | `brew install uv` |
-| uv가 없다 (윈도우) | `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"` |
-| 패키지 추가 | `uv add 패키지명` — **`pip install` 금지** (lock에 안 남아 팀원이 못 받음) |
-| 맥에서 xgboost 오류 | `brew install libomp` (맥 전용, 윈도우는 불필요) |
+## 📌 데이터 흐름
 
-```bash
-uv run streamlit run app/main.py     # 화면 띄우기
-```
+1. **수집** — 스팀 공개 API에서 게임 60개의 리뷰를 커서 방식으로 받습니다. 스팀은 요청 시점의 플레이 시간을 돌려주므로, **한 사람이 한 번만 수집**하고 수집 일시를 함께 기록합니다.
+2. **전처리** — `preprocess.py`가 라벨을 만드는 유일한 곳입니다. 누수 컬럼 8개를 제거하고 학습 직전 자동 검사를 겁니다.
+3. **학습** — 머신러닝과 딥러닝이 **같은 분할·같은 채점표**(`evaluate.py`)를 씁니다. 각자 나누면 비교가 무의미해집니다.
+4. **서비스** — 화면은 `src/predict.py` 하나만 호출합니다. 화면에서 모델을 직접 부르면 전처리가 학습 때와 어긋납니다.
 
-> **Streamlit Cloud 배포 시:** 클라우드는 `uv.lock`을 못 읽습니다. 배포 직전에
-> `uv export --no-hashes --format requirements-txt > requirements.txt` 로 뽑아서 올리세요.
-> 평소에는 만들어두지 않습니다 — `pyproject.toml`과 어긋나기 때문입니다.
+<br />
 
----
+# 5. ERD
 
-## 폴더 구조
+<!-- TODO: ERD 그림을 docs/image/ 에 넣고 아래 주석을 푸세요 -->
 
-```
+<br />
+
+# 6. 폴더구조
+
+```text
 SKN35-2nd-2Team/
-│
-├── pyproject.toml            # 필요한 패키지 목록                    → 커밋
-├── uv.lock                   # 패키지 버전 고정 (팀 전원 동일)       → 커밋 (반드시)
-├── .python-version           # 파이썬 3.12 고정                      → 커밋
-├── .gitattributes            # 줄바꿈 LF 통일 (맥/윈도우 충돌 방지)
-├── .gitignore
-│
-├── src/                      # 코드. 영어·소문자 — import 해야 하므로
-│   ├── __init__.py           #   빈 파일. 있어야 from src.* 가 됨
-│   ├── config.py             #   ★ 경로 · 인코딩 · 시드 · 누수금지목록 · 모델이름
-│   │                         #     파일 위치는 전부 여기서만 정한다
-│   │
-│   ├── preprocess.py         #   ★ 원본 → 학습용 표. 라벨을 만드는 유일한 곳
-│   │                         #     uv run python -m src.preprocess
-│   │                         #     dataset.csv · lang_stats.json · dataset_meta.json 생성
-│   │
-│   ├── evaluate.py           #   채점표. 모든 모델이 이 함수로만 채점된다
-│   │                         #     A셋/B셋 x 랜덤/게임분할 = 4칸
-│   │                         #     결과를 results/results.csv 에 자동 기록
-│   │
-│   ├── train_ml.py           #   머신러닝 — 로지스틱 · RF · XGBoost · LightGBM
-│   ├── embed.py              #   ★ 리뷰 글 → 숫자벡터. 오래 걸리므로 한 번만
-│   │                         #     결과를 data/embeddings/ 에 .npy 로 저장
-│   ├── train_dl.py           #   딥러닝 — (1) MLP 통제군 (숫자만)
-│   │                         #            (2) 임베딩+MLP (숫자+글)
-│   │                         #     (1)은 '글의 효과'를 분리하려는 대조군이다
-│   ├── explain_dl.py         #   SHAP (딥러닝 담당) — 화면 1의 "왜 그렇게 판단했나"
-│   ├── explain_ml.py         #   SHAP (머신러닝 담당)
-│   │                         #     ※ 같은 파일을 둘이 고치면 머지에서 덮인다
-│   ├── predict.py            #   저장된 모델로 리뷰 1건 예측 ← app/ 이 불러 씀
-│   └── db.py                 #   DB 적재 (DB 담당)
-│
-├── app/                      # Streamlit — 배포용
-│   ├── main.py               #   첫 화면 · 프로젝트 소개
-│   ├── pages/                #   파일명이 곧 메뉴 이름. 숫자로 순서 지정
-│   │   ├── 1_작별인사_판별기.py      #  리뷰 붙여넣으면 이탈 확률 + 근거
-│   │   ├── 2_사람_vs_모델.py         #  10장 찍어보고 모델과 점수 비교
-│   │   ├── 3_게임_붙잡기_랭킹.py     #  게임 60개 이탈률 · 초반형/후반형
-│   │   └── 4_처음보는_게임_테스트.py  #  ★ 게임 이름을 외운 게 아님을 증명
-│   └── .streamlit/
-│       └── config.toml       #   테마 · 업로드 용량 설정
-│
-├── data/
-│   ├── raw/                  # 스팀 원본 139,667행         → 깃에 안 올림 (60MB)
-│   │                         #   단, manifest.json(수집 영수증)과
-│   │                         #   selected_60.csv(게임 선정 근거)는 올린다
-│   ├── processed/            # 전처리 결과
-│   │                         #   dataset.csv (64MB)  → 깃에 안 올림
-│   │                         #   lang_stats.json     → 커밋 (언어별 리뷰길이 기준)
-│   │                         #   dataset_meta.json   → 커밋 (행수·열목록·버전)
-│   │                         #   ※ csv 는 코드로 다시 만든다:
-│   │                         #     uv run python -m src.preprocess
-│   └── embeddings/           # 리뷰 임베딩 .npy            → 깃에 안 올림
-│                             #   139,658 x 384 = 수백 MB
-│
-├── models/                   # 학습된 모델 .pkl / .pt      → 깃에 안 올림
-│                             #   최종 제출본 1개만 git add -f 로 강제 추가
-│                             #   함께 저장할 것:
-│                             #     scaler.pkl        스케일링 기준
-│                             #     threshold.json    이탈 판정 임계값
-│                             #     feature_order.json ★ 컬럼 순서
-│                             #       (없으면 화면에서 조용히 틀린 예측이 나옴)
-│
-├── results/                  # results.csv 실험 기록       → 커밋
-│                             #   "그 0.83 나왔던 설정이 뭐였지" 방지용
-│
-├── reports/figures/          # 그래프 png (ROC · SHAP 등)  → 커밋
-│                             #   문서와 PPT에 그대로 붙인다
-│
-├── notebooks/                # 탐색용. 개인 소유
-│                             #   파일명에 본인 이름 (chaeyeong_eda.ipynb)
-│                             #   ※ 노트북은 충돌이 심해 공유 금지. 공유는 .py 로
-│
-├── db/
-│   └── schema.sql            # 테이블 정의 (DB 담당)
-│
-└── docs/                     # 필수 산출물 4종
-                              #   00_제안서.pdf
-                              #   01_전처리결과서.md
-                              #   02_학습결과서.md      ← 모델 담당
-                              #   03_발표자료.pptx
+├── src/            머신러닝·딥러닝 학습, 전처리, 예측 코드
+├── app/            Streamlit 화면 5개
+├── data/           raw(원본) · processed(학습용) · embeddings(임베딩)
+├── models/         학습된 모델 — ml_*(머신러닝) · dl_*(딥러닝) · shap_*(설명)
+├── results/        실험 기록 65건 · 하이퍼파라미터 탐색 로그
+├── reports/        결과서·발표에 쓰는 그림
+├── docs/           전처리 결과서 · 학습 결과서 · 발표 자료
+├── db/             TiDB 스키마 및 적재 스크립트
+├── notebooks/      코랩 실험 노트북
+├── pyproject.toml  패키지 목록 (uv)
+└── uv.lock         버전 고정 — 팀 전원 동일 환경
 ```
 
-### 담당별로 건드리는 곳
+`data/` 의 CSV와 `.npy` 는 용량 때문에 깃에서 제외합니다. 코드로 다시 만들 수 있습니다.
 
-| 담당 | 폴더 | 산출물 |
+## 📌 실행 방법
+
+```bash
+uv sync                              # 파이썬 3.12 + 패키지 (맥·윈도우 동일)
+uv run python -m src.preprocess      # 원본 → 학습용 데이터
+uv run streamlit run app/main.py     # 화면 실행
+```
+
+<br />
+
+# 7. 수행결과
+
+## 📌 모델 성능
+
+영어 리뷰 67,112건 기준. **두 가지 분할로 평가**했습니다.
+
+| 모델 | 랜덤 분할 | 게임 단위 분할 |
 |---|---|---|
-| 수집·전처리 | `data/` · `src/preprocess.py` | 01_전처리결과서 |
-| **머신러닝·딥러닝** | `src/evaluate.py` `train_ml.py` `embed.py` `train_dl.py` `explain_dl.py` · `models/` · `results/` | **02_학습결과서 + 학습된 모델** |
-| Streamlit | `app/` · `src/predict.py` | 배포 주소 |
-| DB | `db/` · `src/db.py` | 스키마 |
+| 로지스틱 회귀 | 0.767 | 0.711 |
+| **랜덤포레스트** | 0.814 | **0.757** |
+| XGBoost | 0.810 | 0.745 |
+| LightGBM (배포본) | 0.813 | 0.742 |
+| MLP (숫자만) | 0.807 | 0.706 |
+| MLP (숫자 + 글) | 0.786 | 0.730 |
+| **AutoGluon multimodal** | 0.807 | **0.759** |
 
-서로 다른 폴더만 건드리므로 **충돌이 거의 안 납니다.** 공통으로 건드리는 건 `src/config.py` 하나뿐이라, 여기만 조심하면 됩니다.
+**게임 단위 분할**은 학습에 없던 게임으로 시험을 봅니다. 게임마다 이탈률이 9%~89%로 달라, 모델이 게임 이름만 외워도 랜덤 분할에서는 잘 나오기 때문입니다.
 
-### 이름 규칙
+> **정확도(accuracy)는 쓰지 않습니다.** 이탈률이 41%라 아무것도 안 하고 "전부 잔존"이라고만 찍어도 59%가 나옵니다.
 
-| 종류 | 규칙 | 이유 |
-|---|---|---|
-| **코드** | 영어 소문자 (`src/config.py`) | `import 04_전처리` 는 문법 오류 — 파이썬이 못 읽음 |
-| **문서·데이터** | 한글·숫자 자유 (`docs/01_전처리결과서.md`) | import 하지 않으므로 상관없음 |
+## 📌 주요 발견
 
-### 경로는 `config.py`에서만
+**① 글만 봐도 맞힌다** — 플레이 시간을 주지 않고 리뷰 글만으로 AUC **0.705** (동전 던지기 0.5)
 
-```python
-from src.config import load_dataset, check_leakage, SEED
+**② 그런데 숫자에 더해도 안 오른다** — 0.813 → 0.807. 글이 아는 걸 숫자가 이미 알고 있습니다.
+글만으로 추천/비추천(👍)을 **AUC 0.939**로 맞히는데, 그건 이미 입력에 있기 때문입니다.
 
-df = load_dataset()        # 인코딩 자동 처리
-check_leakage(X)           # 금지 컬럼 섞이면 에러
-```
+**③ 처음 보는 게임에서는 글이 이긴다** — 0.750 → 0.759
 
-상대경로(`../data/...`)나 절대경로(`C:/Users/...`)를 코드에 직접 쓰면
-실행 위치나 사람이 바뀔 때 깨집니다. `config.py`가 레포 루트를 자동으로 찾습니다.
+> `Trailmakers`에서 10시간은 초보, `Half-Life`에서 10시간은 클리어입니다. **같은 숫자인데 뜻이 정반대**라 새 게임으로 안 옮겨갑니다. 반면 **"환불함"은 어느 게임에서든 환불함**입니다.
+>
+> **숫자는 그 게임 안에서 정확하고, 말은 게임을 건너뛰어도 통합니다.**
 
-> **⚠️ 레포 루트에서 실행하세요.** `src` 안으로 들어가면 `from src.config` 가 안 됩니다.
-> 노트북은 첫 셀에 `%cd <레포 경로>`.
+**④ 천장은 데이터 양이 아니었다** — 학습 곡선이 마지막 구간에서 +0.002로 평평해졌고, 데이터를 2.1배로 늘려도 성능이 같았습니다. 자동화 도구(AutoGluon)도 같은 지점에서 멈췄습니다.
 
-### 인코딩 — 윈도우 필수
+## 📌 산출물
 
-한국어 윈도우 파이썬은 기본이 `cp949`라 명시하지 않으면 **한글이 깨집니다.**
+| | |
+|---|---|
+| 인공지능 데이터 전처리 결과서 | [docs/01_전처리결과서.md](docs/01_전처리결과서.md) · [PDF](docs/01_전처리결과서.pdf) |
+| 인공지능 학습 결과서 (딥러닝) | [docs/02_학습결과서.md](docs/02_학습결과서.md) |
+| 인공지능 학습 결과서 (머신러닝) | [docs/02_학습결과서_머신러닝.md](docs/02_학습결과서_머신러닝.md) · [PDF](docs/02_학습결과서_머신러닝.pdf) |
+| 학습된 인공지능 모델 | [`models/`](models/) |
+| 발표 자료 | [docs/03_발표_딥러닝파트.pptx](docs/03_발표_딥러닝파트.pptx) |
 
-```python
-pd.read_csv(path, encoding='utf-8')                    # 읽기
-df.to_csv(path, index=False, encoding='utf-8-sig')     # 쓰기 (sig = 엑셀 대응)
-```
-
-`config.py`의 `load_dataset()` / `save_csv()`를 쓰면 신경 안 써도 됩니다.
-
----
-
-## 진행 상황
-
-| 단계 | 상태 | 결과 |
-|---|---|---|
-| 제안서 | 완료 | — |
-| 사전조사 (게임 12개 파일럿) | 완료 | 주제 성립 확인 |
-| 게임 선정 | 완료 | 5,992개 → **60개** |
-| 본 수집 | 완료 | **139,667행** · 30개 언어 · 2026-08-25 07:30 UTC |
-| 전처리 | 완료 | **139,658행 × 31열** · 이탈률 41.1% |
-| 머신러닝 · 딥러닝 | **진행 중** | — |
-| Streamlit 화면 | 대기 | — |
-
-### 전처리 결과 요약
-
-```
-원본 139,667행 → 학습용 139,658행 × 31열
-이탈률 41.1%
-변수묶음 2개 — A셋(게임 이름 포함) / B셋(장르·연도·평가등급만)
-분할 2가지 — 랜덤 / 게임 단위
-```
-
-기준 모델(참고용)
-
-| 변수묶음 | 랜덤 분할 | 게임 분할 |
-|---|---|---|
-| A셋 | AUC 0.820 | 0.750 |
-| B셋 | 0.818 | 0.751 |
-
-누수 컬럼을 일부러 넣으면 **0.998**이 나옵니다. **0.95를 넘으면 먼저 누수를 의심합니다.**
-
----
-
-## 다음 할 일
-
-- [ ] `dataset.csv` 받아서 `data/processed/`에 넣기
-- [ ] `evaluate.py` — 4칸 채점표 + `results.csv` 자동 기록
-- [ ] 기준선(로지스틱)으로 팀원 수치 0.820 재현 → 데이터 검증
-- [ ] ML 3종(RF · XGBoost · LightGBM) 기본값으로 표 채우기
-- [ ] 튜닝 (**게임 분할 기준으로**) · SHAP
-- [ ] 딥러닝 ① MLP · ② 다국어 텍스트 임베딩
-- [ ] 최종 모델 저장 → 화면 담당에게 전달
-- [ ] 수집 담당에게 `collect.py` · `selected_60.csv` 받아 `src/` · `data/raw/`에 넣기
-
----
-
-## 팀 규칙
-
-> **수집은 한 사람만 합니다.**
-> 스팀은 요청할 때마다 그 사람의 *현재* 플레이 시간을 돌려줍니다.
-> 각자 받으면 **정답이 서로 달라져서** 성능 비교가 무의미해집니다.
-> 한 명이 받아 파일을 공유하고, 수집 일시를 함께 적습니다.
-
-> **원본 CSV는 아무도 수정하지 않습니다.**
-> 전처리 결과는 항상 원본에서 다시 만듭니다. 그래야 코드를 고쳐도 재수집이 필요 없습니다.
-
-> **전처리는 노트북이 아니라 `preprocess.py` 파일로.**
-> Streamlit 화면에서 사용자가 붙여넣은 리뷰를 학습 때와 똑같이 변환해야 하는데,
-> 노트북 셀에 흩어져 있으면 불러 쓸 수 없습니다.
-
-> **`main` 에 직접 push 하지 않습니다.**
-> 역할별 브랜치 — `feat/preprocess` `feat/model` `feat/app` `feat/db`
-> 4명이 main에 직접 밀면 하루에 몇 번씩 충돌합니다.
-
-> **정확도(accuracy)는 보고하지 않습니다.**
-> 이탈률이 41.1%라 전부 "잔존"이라고만 찍어도 58.9%가 나옵니다.
-> 주지표는 **AUC**, 보조로 PR-AUC · F1.
-
-> **실행하는 스크립트는 `if __name__ == '__main__':` 로 감쌉니다.**
-> 윈도우에서 `n_jobs=-1` 을 쓰면 이 가드가 없을 때 프로세스가 무한 복제됩니다.
+<br />
