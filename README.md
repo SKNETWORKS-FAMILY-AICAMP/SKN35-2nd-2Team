@@ -154,35 +154,9 @@
 
 # 4. 시스템 아키텍처
 
-<!-- TODO: 아키텍처 그림을 docs/image/ 에 넣고 아래 주석을 푸세요
 <div align="center">
   <img src="./docs/image/architecture.png" width="100%" alt="시스템 아키텍처" />
 </div>
--->
-
-```
-[ 스팀 공개 API ]
-        │  collect.py  (게임 60개 · 139,667행 · 175초)
-        ▼
-[ data/raw/steam_raw.csv ]
-        │  preprocess.py  (라벨 생성 · 누수 차단 · 파생 변수)
-        ▼
-[ data/processed/dataset.csv ]  139,658행 × 30열
-        │
-        ├─────────────┬──────────────────┐
-        ▼             ▼                  ▼
-  [ 머신러닝 ]    [ 딥러닝 ]        [ embed.py ]
-  train_ml.py    train_dl.py       리뷰 → 384차원 임베딩
-  tune_ml.py     (MLP + 임베딩)     (all-MiniLM-L6-v2)
-        │             │
-        └──────┬──────┘
-               ▼
-        [ models/ ]  ml_* · dl_* · shap_*
-               │
-               ▼
-        [ Streamlit 화면 5개 ]  ──  [ TiDB Cloud ]
-          src/predict.py             화면 2 퀴즈 기록
-```
 
 ## 📌 데이터 흐름
 
