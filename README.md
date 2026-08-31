@@ -2,7 +2,7 @@
 
 ## 📌 팀명
 
-<h1 align="center">🎮 SKN35-2nd-2Team : S팀 🎮</h1>
+<h1 align="center">🎮 SKN35-2nd-2Team : TEAM-S 🎮</h1>
 
 <br />
 
@@ -13,36 +13,38 @@
 
 <br />
 
-<table>
-  <thead>
-    <tr>
-      <th align="center">차윤정</th>
-      <th align="center">이형민</th>
-      <th align="center">최우석</th>
-      <th align="center">손채영</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center"><img src="./docs/image/2.png" width="130" alt="차윤정" /></td>
-      <td align="center"><img src="./docs/image/3.png" width="130" alt="이형민" /></td>
-      <td align="center"><img src="./docs/image/4.png" width="130" alt="최우석" /></td>
-      <td align="center"><img src="./docs/image/1.png" width="130" alt="손채영" /></td>
-    </tr>
-    <tr>
-      <td align="center"><a href="https://github.com/YOONJUNG">@YOONJUNG</a></td>
-      <td align="center"><a href="https://github.com/tommylee9068">@tommylee9068</a></td>
-      <td align="center"><a href="https://github.com/wsc9150">@wsc9150</a></td>
-      <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
-    </tr>
-    <tr>
-      <td align="center">머신러닝</td>
-      <td align="center">데이터 수집·전처리 / 화면</td>
-      <td align="center">대장 / 화면 / DB</td>
-      <td align="center">딥러닝</td>
-    </tr>
-  </tbody>
-</table>
+<div align="center">
+  <table>
+    <thead>
+      <tr>
+        <th align="center">차윤정</th>
+        <th align="center">이형민</th>
+        <th align="center">최우석</th>
+        <th align="center">손채영</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td align="center"><img src="./docs/image/2.png" width="130" alt="차윤정" /></td>
+        <td align="center"><img src="./docs/image/3.png" width="130" alt="이형민" /></td>
+        <td align="center"><img src="./docs/image/4.png" width="130" alt="최우석" /></td>
+        <td align="center"><img src="./docs/image/1.png" width="130" alt="손채영" /></td>
+      </tr>
+      <tr>
+        <td align="center"><a href="https://github.com/YOONJUNG">@YOONJUNG</a></td>
+        <td align="center"><a href="https://github.com/tommylee9068">@tommylee9068</a></td>
+        <td align="center"><a href="https://github.com/wsc9150">@wsc9150</a></td>
+        <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
+      </tr>
+      <tr>
+        <td align="center"><b>팀장</b><br/>머신러닝<br/>데이터 전처리</td>
+        <td align="center">데이터 수집·전처리<br/>화면 구현<br/>발표</td>
+        <td align="center">대장<br/>화면 구현<br/>DB 설계<br/>배포</td>
+        <td align="center">딥러닝<br/>데이터 전처리</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 <!-- TODO: 이름·역할·팀장 표기를 확인해 주세요. 프로필 이미지는 docs/image/ 에 넣습니다 -->
 
@@ -90,35 +92,11 @@
 
 ## 📌 데이터 소개
 
-### 1) 데이터 출처
-
 - 출처: [Steam 리뷰 공개 API](https://partner.steamgames.com/doc/store/getreviews) — API 키·회원가입 불필요
 - 수집: 2026-08-25 07:30 UTC · 게임 60개 × 리뷰
 - 크기: **139,667행 × 28컬럼** · 30개 언어 · 결측 없음
 
 **게임 60개 선정 기준** — 장르 / 출시시기 / 평가등급 / 가격 / 리뷰 볼륨 5개 축으로 격자를 만들어 골고루 뽑았습니다. 리뷰가 너무 많은 초대형 게임(CS2 등)은 6개월 전 데이터에 도달할 수 없어 제외했습니다.
-
-### 2) 정답(라벨) 정의
-
-```
-리뷰 후 추가 플레이 = 지금까지 총 플레이 − 리뷰 쓸 때까지 플레이
-
-  1시간 미만  →  이탈 (1)
-  1시간 이상  →  잔존 (0)
-
-단, 리뷰를 쓴 지 180일 이상 지난 것만 사용
-```
-
-180일 기준은 데이터가 정했습니다. 최근 리뷰일수록 이탈률이 부풀려지는데(0~30일 46.6%), 180일을 넘기면 평평해집니다.
-
-### 3) 전처리 데이터
-
-전처리 결과는 `data/processed/dataset.csv`로 저장합니다. **139,658행 × 30컬럼**, 이탈률 **41.1%**.
-
-- 물리적으로 불가능한 행 9건 제거 (추가 플레이가 음수)
-- **보유 게임 수 0 (51.5%)** → 실제로는 프로필 비공개. `is_private` 플래그로 분리
-- 리뷰 길이를 **언어별로 보정** (한국어 15자 = 영어 57자)
-- **데이터 누수 컬럼 8개 제거** — 리뷰 작성 시점 이후의 정보
 
 <br />
 
@@ -135,11 +113,11 @@
   </tr>
   <tr>
     <th>Machine Learning</th>
-    <td><img src="https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white"/> <img src="https://img.shields.io/badge/Pandas-150458?style=flat-square&logo=pandas&logoColor=white"/> <img src="https://img.shields.io/badge/scikit--learn-F7931E?style=flat-square&logo=scikitlearn&logoColor=white"/> <img src="https://img.shields.io/badge/XGBoost-337AB7?style=flat-square&logo=xgboost&logoColor=white"/> <img src="https://img.shields.io/badge/LightGBM-02569B?style=flat-square"/> <img src="https://img.shields.io/badge/SHAP-000000?style=flat-square"/></td>
+    <td><img src="https://img.shields.io/badge/NumPy-013243?style=flat-square&logo=numpy&logoColor=white"/> <img src="https://img.shields.io/badge/Pandas-150458?style=flat-square&logo=pandas&logoColor=white"/> <img src="https://img.shields.io/badge/scikit--learn-F7931E?style=flat-square&logo=scikitlearn&logoColor=white"/> <img src="https://img.shields.io/badge/XGBoost-337AB7?style=flat-square&logo=xgboost&logoColor=white"/> <img src="https://img.shields.io/badge/LightGBM-02569B?style=flat-square"/> <img src="https://img.shields.io/badge/SHAP-000000?style=flat-square"/> <img src="https://img.shields.io/badge/AutoGluon-1B7FBD?style=flat-square&logo=amazonaws&logoColor=white"/> <img src="https://img.shields.io/badge/RandomForest-1B7FBD?style=flat-square&logo=amazonaws&logoColor=white"/></td>
   </tr>
   <tr>
     <th>Deep Learning</th>
-    <td><img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white"/> <img src="https://img.shields.io/badge/Sentence--Transformers-FFD21E?style=flat-square&logo=huggingface&logoColor=black"/> <img src="https://img.shields.io/badge/AutoGluon-1B7FBD?style=flat-square&logo=amazonaws&logoColor=white"/> <img src="https://img.shields.io/badge/Google_Colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white"/></td>
+    <td><img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white"/> <img src="https://img.shields.io/badge/Sentence--Transformers-FFD21E?style=flat-square&logo=huggingface&logoColor=black"/> <img src="https://img.shields.io/badge/Google_Colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white"/></td>
   </tr>
   <tr>
     <th>Infra &amp; 협업</th>
@@ -152,7 +130,7 @@
 # 4. 시스템 아키텍처
 
 <div align="center">
-  <img src="./docs/image/architecture.png" width="100%" alt="시스템 아키텍처" />
+  <img src="./docs/image/steam_churn_architecture.png" width="100%" alt="시스템 아키텍처" />
 </div>
 
 ## 📌 데이터 흐름
@@ -166,7 +144,9 @@
 
 # 5. ERD
 
-<!-- TODO: ERD 그림을 docs/image/ 에 넣고 아래 주석을 푸세요 -->
+<div align="center">
+  <img src="./docs/image/ERD.png" width="100%" alt="DB구조" />
+</div>
 
 <br />
 
