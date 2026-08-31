@@ -15,8 +15,15 @@ dependencies = [
     "sentence-transformers",
     "ipykernel",
     "streamlit>=1.62.0",
+    "plotly>=7.0.0",
+    "imbalanced-learn>=0.14.2",
     "autogluon-tabular>=1.6.1",
     "autogluon-multimodal>=1.6.1",
+    "pydeck>=0.9.3",
+    "streamlit-autorefresh>=1.0.1",
+    # DB (화면 2 퀴즈 기록 · TiDB = MySQL 호환)
+    "sqlalchemy>=2.0",
+    "pymysql>=1.1",
 ]
 
 [tool.uv]

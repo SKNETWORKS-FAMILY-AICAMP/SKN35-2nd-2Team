@@ -10,6 +10,10 @@ data/processed/*.csv
 # 단, 게임 60개 선정 결과는 근거 자료라 예외 (60행짜리)
 !data/raw/selected_60.csv
 
+# DB 접속정보 — TiDB 비밀번호가 그대로 들어 있다. 절대 커밋하지 않는다.
+# 공유는 .streamlit/secrets.toml.example 을 각자 채우는 방식으로 한다.
+.streamlit/secrets.toml
+
 # 임베딩 캐시 — 139,658건 x 384차원이면 수백 MB
 *.npy
 data/embeddings/*

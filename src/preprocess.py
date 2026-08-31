@@ -200,7 +200,20 @@ def clean(raw: pd.DataFrame, save_stats: bool = True) -> pd.DataFrame:
     d["is_spike"] = d.is_spike.fillna(0).astype(int)
     d = d.drop(columns=["date"])
 
-    d["release_year"] = d.release_year.astype("Int64").astype(str)   # 범주로 취급
+    # ★ 의도는 "범주로 취급" 이지만 CSV 를 거치면서 그 의도가 사라진다.
+    #   여기서 문자열 '2024' 로 만들어도 dataset.csv 에는 따옴표가 없어서
+    #   config.load_dataset() 이 다시 읽을 때 int64 로 돌아온다.
+    #   -> 학습은 release_year 를 '숫자' 로 배웠다. 범주가 아니다.
+    #
+    #   반면 featurize() 는 화면용으로 문자열을 그대로 돌려주므로,
+    #   predict.coerce_dtypes() 와 explain_ml.to_model_frame() 이 각각
+    #   숫자로 되돌려 학습 때와 맞춰 주고 있다 (땜빵 2곳).
+    #
+    #   제대로 고치려면 둘 중 하나를 골라야 하고, 어느 쪽이든 재학습이 필요하다.
+    #     (a) 의도대로 - load_dataset() 에 dtype={"release_year": str} 지정
+    #     (b) 현실대로 - 아래 astype(str) 을 빼고 숫자로 확정
+    #   재학습 전까지 땜빵 2곳을 지우지 말 것.
+    d["release_year"] = d.release_year.astype("Int64").astype(str)   # 위 주석 참고
 
     return d
 
