@@ -5,8 +5,8 @@
 이 레포에는 pandoc · wkhtmltopdf · weasyprint 가 없다. 설치하려면 팀 전원이
 같은 걸 깔아야 하므로, 파이썬만으로 되게 reportlab 으로 직접 조판한다.
 
-    uv run python -m src.md2pdf docs/02_학습결과서_머신러닝.md
-    uv run python -m src.md2pdf docs/02_학습결과서.md docs/딥러닝.pdf
+    uv run python -m src.md2pdf docs/학습결과서_머신러닝.md
+    uv run python -m src.md2pdf docs/학습결과서_딥러닝.md docs/딥러닝.pdf
 
 reportlab 은 pyproject 에 넣지 않았다. 문서 만들 때만 쓰므로
 `uv run --with reportlab python -m src.md2pdf ...` 로 그때만 끌어다 쓴다
