@@ -1,8 +1,6 @@
-<!-- TODO: 팀 배너 이미지를 docs/image/ 에 넣고 아래 주석을 푸세요
 <div align="center">
-  <img src="./docs/image/team-banner.png" width="100%" alt="팀 배너" />
+  <img src="./docs/image/team.png" width="100%" alt="S팀" />
 </div>
--->
 
 <br />
 
@@ -183,7 +181,7 @@ SKN35-2nd-2Team/
 ├── models/         학습된 모델 — ml_*(머신러닝) · dl_*(딥러닝) · shap_*(설명)
 ├── results/        실험 기록 65건 · 하이퍼파라미터 탐색 로그
 ├── reports/        결과서·발표에 쓰는 그림
-├── docs/           전처리 결과서 · 학습 결과서 · 발표 자료
+├── docs/           전처리 결과서 · 학습 결과서
 ├── db/             TiDB 스키마 및 적재 스크립트
 ├── notebooks/      코랩 실험 노트북
 ├── pyproject.toml  패키지 목록 (uv)
@@ -242,9 +240,8 @@ uv run streamlit run app/main.py     # 화면 실행
 | | |
 |---|---|
 | 인공지능 데이터 전처리 결과서 | [docs/01_전처리결과서.md](docs/01_전처리결과서.md) · [PDF](docs/01_전처리결과서.pdf) |
-| 인공지능 학습 결과서 (딥러닝) | [docs/02_학습결과서.md](docs/02_학습결과서.md) |
-| 인공지능 학습 결과서 (머신러닝) | [docs/02_학습결과서_머신러닝.md](docs/02_학습결과서_머신러닝.md) · [PDF](docs/02_학습결과서_머신러닝.pdf) |
+| 인공지능 학습 결과서 (딥러닝) | [docs/학습결과서_딥러닝.md](docs/학습결과서_딥러닝.md) |
+| 인공지능 학습 결과서 (머신러닝) | [docs/학습결과서_머신러닝.md](docs/학습결과서_머신러닝.md) · [PDF](docs/학습결과서_머신러닝.pdf) |
 | 학습된 인공지능 모델 | [`models/`](models/) |
-| 발표 자료 | [docs/03_발표_딥러닝파트.pptx](docs/03_발표_딥러닝파트.pptx) |
 
 <br />

@@ -14,7 +14,7 @@
     사람이 눈으로 잡기 어려운 종류다. 3초면 도는 검사로 막는다.
 
     uv run python -m src.verify_docs                    # docs/*.md 전부
-    uv run python -m src.verify_docs docs/02_학습결과서.md
+    uv run python -m src.verify_docs docs/학습결과서_딥러닝.md
 
 무엇을 보는가
     1 경로    문서의 `path/to/file` 이 실재하는가
