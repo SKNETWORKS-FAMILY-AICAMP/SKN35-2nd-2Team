@@ -13,36 +13,38 @@
 
 <br />
 
-<table>
-  <thead>
-    <tr>
-      <th align="center">차윤정</th>
-      <th align="center">이형민</th>
-      <th align="center">최우석</th>
-      <th align="center">손채영</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center"><img src="./docs/image/2.png" width="130" alt="차윤정" /></td>
-      <td align="center"><img src="./docs/image/3.png" width="130" alt="이형민" /></td>
-      <td align="center"><img src="./docs/image/4.png" width="130" alt="최우석" /></td>
-      <td align="center"><img src="./docs/image/1.png" width="130" alt="손채영" /></td>
-    </tr>
-    <tr>
-      <td align="center"><a href="https://github.com/YOONJUNG">@YOONJUNG</a></td>
-      <td align="center"><a href="https://github.com/tommylee9068">@tommylee9068</a></td>
-      <td align="center"><a href="https://github.com/wsc9150">@wsc9150</a></td>
-      <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
-    </tr>
-    <tr>
-      <td align="center"><b>팀장</b><br/>머신러닝<br/>데이터 전처리</td>
-      <td align="center">데이터 수집·전처리<br/>화면 구현<br/>발표</td>
-      <td align="center">대장<br/>화면 구현<br/>DB 설계<br/>배포</td>
-      <td align="center">딥러닝<br/>데이터 전처리</td>
-    </tr>
-  </tbody>
-</table>
+<div align="center">
+  <table>
+    <thead>
+      <tr>
+        <th align="center">차윤정</th>
+        <th align="center">이형민</th>
+        <th align="center">최우석</th>
+        <th align="center">손채영</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td align="center"><img src="./docs/image/2.png" width="130" alt="차윤정" /></td>
+        <td align="center"><img src="./docs/image/3.png" width="130" alt="이형민" /></td>
+        <td align="center"><img src="./docs/image/4.png" width="130" alt="최우석" /></td>
+        <td align="center"><img src="./docs/image/1.png" width="130" alt="손채영" /></td>
+      </tr>
+      <tr>
+        <td align="center"><a href="https://github.com/YOONJUNG">@YOONJUNG</a></td>
+        <td align="center"><a href="https://github.com/tommylee9068">@tommylee9068</a></td>
+        <td align="center"><a href="https://github.com/wsc9150">@wsc9150</a></td>
+        <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
+      </tr>
+      <tr>
+        <td align="center"><b>팀장</b><br/>머신러닝<br/>데이터 전처리</td>
+        <td align="center">데이터 수집·전처리<br/>화면 구현<br/>발표</td>
+        <td align="center">대장<br/>화면 구현<br/>DB 설계<br/>배포</td>
+        <td align="center">딥러닝<br/>데이터 전처리</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 <!-- TODO: 이름·역할·팀장 표기를 확인해 주세요. 프로필 이미지는 docs/image/ 에 넣습니다 -->
 
