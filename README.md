@@ -19,30 +19,30 @@
 <table>
   <thead>
     <tr>
-      <th align="center">손채영</th>
       <th align="center">차윤정</th>
       <th align="center">이형민</th>
       <th align="center">최우석</th>
+      <th align="center">손채영</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td align="center"><img src="./docs/image/1.png" width="130" alt="손채영" /></td>
       <td align="center"><img src="./docs/image/2.png" width="130" alt="차윤정" /></td>
       <td align="center"><img src="./docs/image/3.png" width="130" alt="이형민" /></td>
       <td align="center"><img src="./docs/image/4.png" width="130" alt="최우석" /></td>
+      <td align="center"><img src="./docs/image/1.png" width="130" alt="손채영" /></td>
     </tr>
     <tr>
-      <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
       <td align="center"><a href="https://github.com/YOONJUNG">@YOONJUNG</a></td>
       <td align="center"><a href="https://github.com/tommylee9068">@tommylee9068</a></td>
       <td align="center"><a href="https://github.com/wsc9150">@wsc9150</a></td>
+      <td align="center"><a href="https://github.com/cchhaaee1023">@cchhaaee1023</a></td>
     </tr>
     <tr>
-      <td align="center">딥러닝</td>
       <td align="center">머신러닝</td>
       <td align="center">데이터 수집·전처리 / 화면</td>
       <td align="center">대장 / 화면 / DB</td>
+      <td align="center">딥러닝</td>
     </tr>
   </tbody>
 </table>
@@ -196,24 +196,6 @@
 # 5. ERD
 
 <!-- TODO: ERD 그림을 docs/image/ 에 넣고 아래 주석을 푸세요 -->
-
-이 프로젝트에서 DB는 **화면 2 「사람 vs 모델」 퀴즈 기록**에만 사용합니다.
-
-나머지 화면은 CSV를 읽기만 하므로 DB가 오히려 느립니다. 퀴즈는 여러 사람의 기록을 모아야 의미가 생기므로(누적 평균) 파일이나 세션 메모리로는 안 됩니다.
-
-```
-quiz_session        한 사람의 퀴즈 1회
-  session_id (PK) · nickname · started_at · finished_at
-  human_score · model_score
-
-quiz_answer         문항별 응답
-  answer_id (PK) · session_id (FK) · recommendationid
-  human_guess · model_pred · truth · answered_at
-```
-
-**개인정보 원칙** — 실명·연락처·이메일은 받지 않습니다. 닉네임은 화면 표시용이며 익명 참여를 허용합니다.
-
-스키마 정의는 [`db/schema.sql`](db/schema.sql), 적재는 [`db/setup_tidb.py`](db/setup_tidb.py) 입니다.
 
 <br />
 
